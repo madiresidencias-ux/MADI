@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Solicitante · Nueva solicitud</title>
+
+  <!-- Fuente -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- CSS principal -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/solicitante.css') }}">
+
+  <style>
+    .file-preview{display:none;margin-top:10px;gap:10px;flex-wrap:wrap}
+    .thumb{position:relative;display:inline-block}
+    .thumb img{max-width:150px;max-height:120px;border-radius:8px;box-shadow:0 6px 14px rgba(0,0,0,.15);border:1px solid rgba(0,0,0,.08);background:#fff;object-fit:contain}
+    .thumb .remove{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:999px;border:none;cursor:pointer;background:#fff;color:#a12033;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+    .help{font-size:12px;color:var(--muted)}
+    .chip-row--probs{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+    .chip-btn--ghost{background:#fff;border-style:dashed}
+    .chip-btn--ghost:hover{background:#fff6f7}
+    .hidden{display:none!important}
+    .area-badge{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-weight:700}
+    .area-badge span{color:var(--muted);font-weight:600}
+
+    /* Avisos bloqueantes */
+    .guard-banner{display:none;align-items:flex-start;gap:10px;background:#fff4f4;border:1px solid #f3c1c5;color:#5a0f1d;padding:12px;border-radius:12px;margin:12px auto;max-width:980px}
+    .guard-banner svg{min-width:20px}
+    .guard-banner.show{display:flex}
+    .guard-actions{margin-left:auto;display:flex;gap:8px}
+    .guard-actions .btn{height:32px}
+  </style>
+</head>
+<body>
+  <!-- HERO -->
+  <header class="site-header hero">
+    <div class="container brand-row">
+      <div class="hero-title"><h1 class="site-title">SOLICITANTE</h1></div>
+    </div>
+  </header>
+
+  <!-- MENÚ -->
+  <nav class="sol-nav container">
+    <a class="nav-link active" href="{{ url_for('solicitante_form') }}">Nueva solicitud</a>
+    <a class="nav-link" href="{{ url_for('solicitante_tickets') }}">Mis tickets</a>
+    <a class="nav-link nav-link--logout" href="{{ url_for('logout') }}">Salir</a>
+  </nav>
+
+  <!-- Banner bloqueo (encuesta pendiente o límite de abiertos) -->
+  <div id="guardBanner" class="guard-banner container" role="alert" aria-live="polite">
+    <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M11 7h2v6h-2V7m1 13q-.825 0-1.413-.588T10 18q0-.825.588-1.413T12 16q.825 0 1.413.588T14 18q0 .825-.588 1.413T12 20m0 2q-2.9 0-5.45-1.1t-4.45-3q1.9-1.9 4.45-3T12 13t5.45 1.1t4.45 3q-1.9 1.9-4.45 3T12 22m0-2q1.95 0 3.763-.575T19 18.8q-1.325-.925-3.137-1.5T12 16q-2.1 0-3.913.575T5 18.8q1.375.925 3.188 1.5T12 20Z"/></svg>
+    <div>
+      <strong id="guardTitle">Acción requerida</strong>
+      <div id="guardText" class="help">Debes completar un requisito antes de crear otro ticket.</div>
+    </div>
+    <div class="guard-actions">
+      <a class="btn" href="{{ url_for('solicitante_tickets') }}">Ir a mis tickets</a>
+      <button id="guardDismiss" class="btn">Cerrar</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <p class="intro">Envía tu solicitud. Tu <strong>área</strong> se asigna automáticamente desde tu cuenta.</p>
+  </div>
+
+  <section class="card">
+    <h2 class="form-title">Formato en línea · reporte de servicios</h2>
+
+    <form id="formSolicitud" novalidate enctype="multipart/form-data">
+      <!-- FECHA -->
+      <div class="panel">
+        <div class="section-bar"><span class="section-title">Fecha de solicitud</span><span class="badge badge-auto">Automática</span></div>
+        <div class="date-wrap" aria-label="Fecha de solicitud">
+          <div class="date-item"><div id="dayNum" class="date-number">24</div><div class="date-label">Día</div></div>
+          <div class="date-item"><div id="monthName" class="date-number">AGOSTO</div><div class="date-label">Mes</div></div>
+          <div class="date-item"><div id="yearNum" class="date-number">2025</div><div class="date-label">Año</div></div>
+          <div class="date-item"><div id="timeStr" class="date-number">22:56</div><div class="date-label">Hora</div></div>
+        </div>
+        <input type="hidden" id="fechaSolicitudISO" />
+      </div>
+
+      <!-- DATOS DEL SOLICITANTE -->
+      <div class="panel">
+        <div class="section-bar"><span class="section-title">Datos del solicitante</span><span class="badge badge-required">Obligatorio</span></div>
+        <div class="grid">
+          <div class="col-12">
+            <label for="solicitanteNombre">Nombre del solicitante (obligatorio)</label>
+            <input id="solicitanteNombre" name="solicitante_nombre" type="text" placeholder="Nombre y apellidos" required>
+            <div class="help">Este nombre aparecerá en el ticket.</div>
+          </div>
+          <div class="col-12">
+            <label>Área de solicitud</label>
+            <div class="area-badge"><span>Asignada automáticamente:</span><strong id="areaNombre">(cargando…)</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TIPO (desde BD) -->
+      <div class="panel">
+        <div class="section-bar"><span class="section-title">Tipo de solicitud</span><span class="badge badge-required">Obligatorio</span></div>
+        <input type="hidden" id="tipoSolicitud" required />
+        <div id="chipTipos" class="chip-row" role="group" aria-label="Tipo de solicitud"></div>
+        <div class="note note-spaced" id="tipoHelp">Selecciona una opción para continuar.</div>
+      </div>
+
+      <!-- PROBLEMAS FRECUENTES -->
+      <div id="panelProblemas" class="panel hidden" aria-live="polite">
+        <div class="section-bar">
+          <span class="section-title">Problemas frecuentes</span>
+          <span class="badge badge-optional">Sugerencias</span>
+        </div>
+        <div class="help" style="margin-bottom:10px">Elige un problema común para autocompletar la descripción. Puedes editar el texto después.</div>
+        <div id="chipProblemas" class="chip-row chip-row--probs" role="group" aria-label="Problemas frecuentes"></div>
+      </div>
+
+      <!-- DESCRIPCIÓN -->
+      <div class="panel">
+        <div class="section-bar"><span class="section-title">Descripción</span><span class="badge badge-required">Obligatorio</span></div>
+        <label for="desc">Descripción (obligatoria)</label>
+        <textarea id="desc" placeholder="Describe el problema, equipo afectado, horarios, etc." required></textarea>
+        <div class="help">Evita utilizar “&lt;”, “&gt;” y “&amp;”.</div>
+      </div>
+
+      <!-- ADJUNTOS -->
+      <div class="panel">
+        <div class="section-bar">
+          <span class="section-title">Adjuntar evidencias</span>
+          <span class="badge badge-optional">Opcional</span>
+        </div>
+
+        <div class="col-12 file-row">
+          <input id="fileCamera" type="file" hidden accept="image/*" capture="environment" />
+          <input id="fileGallery" type="file" hidden accept="image/*" multiple />
+          <button type="button" class="btn btn-primary" id="btnCamera">Tomar foto</button>
+          <button type="button" class="btn" id="btnGallery">Subir de galería</button>
+          <span class="note" id="fileName">Ningún archivo seleccionado</span>
+          <span class="note" style="margin-left:auto;">Máx. 3 imágenes</span>
+        </div>
+        <div id="filePreviewBox" class="file-preview"></div>
+      </div>
+
+      <div class="submit-bar"><button class="submit-btn" type="submit">ENVIAR</button></div>
+    </form>
+  </section>
+
+  <script>
+/* ========= FECHA + RELOJ ========= */
+(() => {
+  const dN = document.getElementById('dayNum');
+  const mN = document.getElementById('monthName');
+  const yN = document.getElementById('yearNum');
+  const tS = document.getElementById('timeStr');
+  const iso = document.getElementById('fechaSolicitudISO');
+  if (!dN || !mN || !yN || !tS || !iso) return;
+
+  const M = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+  const pad = n => String(n).padStart(2, '0');
+  const paintD = (d) => { dN.textContent = pad(d.getDate()); mN.textContent = M[d.getMonth()]; yN.textContent = d.getFullYear(); };
+  const paintT = (d) => { tS.textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+
+  let now = new Date();
+  paintD(now); paintT(now); iso.value = now.toISOString();
+  setInterval(() => {
+    now = new Date(); paintT(now); iso.value = now.toISOString();
+    if (dN.textContent !== pad(now.getDate()) || mN.textContent !== M[now.getMonth()] || yN.textContent !== String(now.getFullYear())) {
+      paintD(now);
+    }
+  }, 1000);
+})();
+
+/* ========= ÁREA desde la sesión ========= */
+(async function pintarArea() {
+  try {
+    const areaEl = document.getElementById('areaNombre');
+    if (!areaEl) return;
+    const me = await fetch("/api/session/me", { headers: { Accept: "application/json" } }).then(r => r.json());
+    areaEl.textContent = me.area_name || "(Sin área)";
+  } catch {}
+})();
+
+/* ========= util ========= */
+const slugify = (t) =>
+  (t || "").toString().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .replace(/--+/g, '-');
+
+/* ========= TIPOS (chips) ========= */
+const chipTipos  = document.getElementById('chipTipos');
+const tipoHidden = document.getElementById('tipoSolicitud');
+const tipoHelp   = document.getElementById('tipoHelp');
+
+function addTipoChip(nombre, slug, ghost = false) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = `chip-btn ${ghost ? 'chip-btn--ghost' : ''}`.trim();
+  b.dataset.value = nombre;
+  b.dataset.slug  = slug;
+  b.textContent   = nombre;
+
+  const pick = () => {
+    chipTipos.querySelectorAll('.chip-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    if (tipoHidden) tipoHidden.value = nombre;
+    if (tipoHelp) {
+      tipoHelp.textContent = `Seleccionado: ${nombre}`;
+      tipoHelp.style.color = '';
+    }
+    chipTipos.classList?.remove('chip-row-warning');
+    renderProblemas(nombre);
+  };
+
+  b.addEventListener('click', pick);
+  b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+
+  chipTipos.appendChild(b);
+  return b;
+}
+
+async function cargarTipos() {
+  if (!chipTipos) return;
+  chipTipos.innerHTML = '';
+  try {
+    const tipos = await fetch('/api/tipos-solicitud', { headers: { Accept: 'application/json' } }).then(r => r.json());
+    (tipos || []).forEach(t => addTipoChip(t.nombre, t.slug));
+    addTipoChip('OTRO', 'otro', true);
+    if (!tipos || !tipos.length) {
+      chipTipos.querySelector('.chip-btn[data-slug="otro"]')?.click();
+    }
+  } catch {
+    addTipoChip('OTRO', 'otro', true).click();
+  }
+}
+cargarTipos();
+
+/* ========= SUGERENCIAS ========= */
+const panelProblemas = document.getElementById('panelProblemas');
+const chipProblemas  = document.getElementById('chipProblemas');
+const desc           = document.getElementById('desc');
+
+function renderProblemas(tipoTexto) {
+  if (!chipProblemas || !panelProblemas) return;
+  chipProblemas.innerHTML = '';
+  const slug = slugify(tipoTexto);
+  if (!slug) { panelProblemas.classList.add('hidden'); return; }
+  panelProblemas.classList.remove('hidden');
+
+  const clearActive = () => {
+    chipProblemas.querySelectorAll('.chip-btn').forEach(x => {
+      x.classList.remove('active');
+      x.setAttribute('aria-pressed', 'false');
+    });
+  };
+
+  const addChip = (label, onPick, extraClass = '') => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = `chip-btn ${extraClass}`.trim();
+    b.textContent = label;
+    b.setAttribute('aria-pressed', 'false');
+
+    const pick = () => {
+      clearActive();
+      b.classList.add('active');
+      b.setAttribute('aria-pressed', 'true');
+      onPick && onPick();
+    };
+
+    b.addEventListener('click', pick);
+    b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+    chipProblemas.appendChild(b);
+    return b;
+  };
+
+  (async () => {
+    try {
+      const sug = await fetch(`/api/sugerencias?tipo=${encodeURIComponent(slug)}`, { headers: { Accept: 'application/json' } }).then(r => r.json());
+      if (Array.isArray(sug) && sug.length) {
+        sug.forEach(item => addChip(item.texto, () => { desc.value = item.texto; desc.focus(); }));
+      } else {
+        const info = document.createElement('div');
+        info.className = 'note';
+        info.style.gridColumn = '1 / -1';
+        info.textContent = 'No hay sugerencias para este tipo. Puedes escribir tu descripción.';
+        chipProblemas.appendChild(info);
+      }
+      addChip('Plantilla base del tipo', () => {
+        desc.value = `Tipo: ${tipoTexto}
+Problema: [ Describe brevemente ]
+Equipo/Área: [ opcional ]
+Horario en que ocurre: [ opcional ]`;
+        desc.focus();
+      }, 'chip-btn--ghost');
+
+      addChip('Otro (describir manualmente)', () => {
+        if (!desc.value.trim()) {
+          desc.value = `Tipo: ${tipoTexto}
+Problema: `;
+        }
+        desc.focus();
+      }, 'chip-btn--ghost');
+
+      if (desc) {
+        desc.removeEventListener('input', desc.__clearChipActive__);
+        desc.__clearChipActive__ = () => clearActive();
+        desc.addEventListener('input', desc.__clearChipActive__);
+      }
+    } catch {
+      chipProblemas.innerHTML = '';
+      addChip('Otro (describir manualmente)', () => { desc?.focus(); }, 'chip-btn--ghost');
+    }
+  })();
+}
+
+/* ========= ARCHIVOS ========= */
+const fileCamera  = document.getElementById('fileCamera');
+const fileGallery = document.getElementById('fileGallery');
+const btnCamera   = document.getElementById('btnCamera');
+const btnGallery  = document.getElementById('btnGallery');
+const nameSpan    = document.getElementById('fileName');
+const previewBox  = document.getElementById('filePreviewBox');
+
+let selectedFiles = [];
+btnCamera?.addEventListener('click', () => fileCamera?.click());
+btnGallery?.addEventListener('click', () => fileGallery?.click());
+
+fileCamera?.addEventListener('change', () => {
+  if (fileCamera.files?.length) { addFiles(fileCamera.files); fileCamera.value = ''; }
+});
+fileGallery?.addEventListener('change', () => {
+  if (fileGallery.files?.length) { addFiles(fileGallery.files); fileGallery.value = ''; }
+});
+
+function addFiles(fileList) {
+  const incoming = [...fileList].filter(f => f.type.startsWith('image/'));
+  for (const f of incoming) {
+    if (selectedFiles.length >= 3) break;
+    selectedFiles.push(f);
+  }
+  if (incoming.length && selectedFiles.length > 3) {
+    selectedFiles = selectedFiles.slice(0, 3);
+    alert('Solo puedes adjuntar hasta 3 imágenes.');
+  }
+  if (nameSpan) {
+    nameSpan.textContent = selectedFiles.length
+      ? selectedFiles.map(f => f.name || 'foto.jpg').join(', ')
+      : 'Ningún archivo seleccionado';
+  }
+  renderPreviews();
+}
+
+function renderPreviews() {
+  if (!previewBox) return;
+  previewBox.innerHTML = '';
+  if (!selectedFiles.length) { previewBox.style.display = 'none'; return; }
+  previewBox.style.display = 'flex';
+
+  selectedFiles.forEach((f, idx) => {
+    const wrap = document.createElement('div'); wrap.className = 'thumb';
+    const img  = document.createElement('img');
+    const rd   = new FileReader();
+    rd.onload  = e => img.src = e.target.result;
+    rd.readAsDataURL(f);
+    const rm = document.createElement('button');
+    rm.type = 'button'; rm.className = 'remove'; rm.title = 'Quitar'; rm.textContent = '×';
+    rm.addEventListener('click', () => {
+      selectedFiles.splice(idx, 1);
+      if (nameSpan) {
+        nameSpan.textContent = selectedFiles.length
+          ? selectedFiles.map(ff => ff.name || 'foto.jpg').join(', ')
+          : 'Ningún archivo seleccionado';
+      }
+      renderPreviews();
+    });
+    wrap.appendChild(img); wrap.appendChild(rm); previewBox.appendChild(wrap);
+  });
+}
+
+/* ========= GUARDAS FRONT (banner) ========= */
+(async function guards() {
+  try {
+    const banner = document.getElementById('guardBanner');
+    const title  = document.getElementById('guardTitle');
+    const text   = document.getElementById('guardText');
+    const btn    = document.getElementById('guardDismiss');
+
+    // 1) Encuesta pendiente
+    const pend = await fetch('/api/encuestas/pending', { headers: { Accept:'application/json' } }).then(r=>r.json());
+    if (pend && pend.ok && pend.count > 0) {
+      banner.classList.add('show');
+      title.textContent = 'Encuesta de satisfacción pendiente';
+      text.textContent  = 'Debes responder la encuesta del último ticket resuelto antes de crear otro.';
+      btn.onclick = () => banner.classList.remove('show');
+      return;
+    }
+
+    // 2) Límite abiertos (servidor permite 1 o 2 según config; avisamos si alcanza 2)
+    const me = await fetch('/api/mis-tickets?estado=PENDIENTE', { headers:{Accept:'application/json'} }).then(r=>r.json());
+    const en = await fetch('/api/mis-tickets?estado=EN_CURSO', { headers:{Accept:'application/json'} }).then(r=>r.json());
+    const openCount = (me?.length||0) + (en?.length||0);
+    if (openCount >= 2) {
+      banner.classList.add('show');
+      title.textContent = 'Límite de tickets abiertos alcanzado';
+      text.textContent  = 'Cierra un ticket abierto para poder crear uno nuevo.';
+      btn.onclick = () => banner.classList.remove('show');
+    }
+  } catch {}
+})();
+
+/* ========= TOAST ========= */
+function showToast(message, { type = 'ok', ms = 1400, onDone = null } = {}) {
+  let wrap = document.getElementById('toastWrap');
+  if (!wrap) {
+    wrap = document.createElement('div');
+    wrap.id = 'toastWrap';
+    wrap.className = 'toast-wrap';
+    document.body.appendChild(wrap);
+  }
+  const t = document.createElement('div');
+  t.className = `toast toast--${type}`;
+  t.innerHTML = `<svg class="toast__icon" viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg><p class="toast__text">${message}</p>`;
+  wrap.appendChild(t);
+  setTimeout(() => {
+    t.classList.add('toast--hide');
+    t.addEventListener('animationend', () => { t.remove(); if (typeof onDone === 'function') onDone(); }, { once: true });
+  }, ms);
+}
+
+/* ========= SUBMIT ========= */
+(() => {
+  const form = document.getElementById('formSolicitud');
+  if (!form) return;
+
+  const submitBtn = form.querySelector('.submit-btn');
+  let sending = false;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (sending) return;
+    sending = true;
+
+    const nombre = document.getElementById('solicitanteNombre')?.value.trim();
+    const tipo   = document.getElementById('tipoSolicitud')?.value;
+    const texto  = document.getElementById('desc')?.value.trim();
+
+    if (!nombre) { document.getElementById('solicitanteNombre')?.focus(); sending = false; return; }
+    if (!tipo)   { chipTipos?.classList.add('chip-row-warning'); sending = false; return; }
+    if (!texto)  { document.getElementById('desc')?.focus(); sending = false; return; }
+
+    const prevLabel = submitBtn?.textContent;
+    if (submitBtn) {
+      submitBtn.textContent = 'Enviando…';
+      submitBtn.disabled = true;
+      submitBtn.style.pointerEvents = 'none';
+    }
+
+    const fd = new FormData();
+    fd.append('solicitante_nombre', nombre);
+    fd.append('tipo', tipo);
+    fd.append('descripcion', texto);
+    if (Array.isArray(selectedFiles)) {
+      for (const f of selectedFiles) fd.append('imagenes', f);
+    }
+
+    try {
+      const r = await fetch('/api/tickets', { method:'POST', body: fd, credentials:'same-origin' });
+      if (r.status === 409) {
+        const j = await r.json().catch(()=>({}));
+        // Manejamos códigos del backend para mensajes claros
+        if (j.code === 'SURVEY_REQUIRED') {
+          showToast('Debes responder la encuesta pendiente antes de crear otro ticket.', { type:'err', ms:2200 });
+          document.getElementById('guardBanner')?.classList.add('show');
+        } else if (j.code === 'MAX_OPEN_TICKETS') {
+          showToast('Límite de tickets abiertos alcanzado.', { type:'err', ms:1800 });
+          document.getElementById('guardBanner')?.classList.add('show');
+        } else {
+          showToast(j.msg || 'No se pudo crear el ticket.', { type:'err' });
+        }
+        throw new Error('409');
+      }
+      if (!r.ok) throw new Error('Error al enviar');
+
+      // OK -> ir a Mis tickets
+      window.location.replace("{{ url_for('solicitante_tickets') }}");
+    } catch (err) {
+      sending = false;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.style.pointerEvents = '';
+        submitBtn.textContent = prevLabel || 'ENVIAR';
+      }
+      if (err.message !== '409') {
+        showToast('No se pudo enviar. Intenta de nuevo.', { type:'err', ms:1600 });
+      }
+    }
+  });
+
+  form.addEventListener('keydown', (e) => { if (sending && e.key === 'Enter') e.preventDefault(); });
+})();
+  </script>
+
+  <div id="toastWrap" class="toast-wrap" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>

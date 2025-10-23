@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>MADI — Admin | Usuarios</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>:root{ --vino:#8b1e3f }</style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <header class="bg-white shadow">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <h1 class="text-xl font-semibold"><span style="color:var(--vino);font-weight:700">MADI</span> — Usuarios</h1>
+      <nav class="text-sm">
+        <a href="/admin/dashboard" class="mr-4 text-gray-600 hover:text-gray-900">Dashboard</a>
+        <a href="/admin/tickets" class="mr-4 text-gray-600 hover:text-gray-900">Tickets</a>
+        <a href="/admin/users" class="mr-4 font-medium text-gray-900">Usuarios</a>
+        <a href="/admin/surveys" class="text-gray-600 hover:text-gray-900">Encuestas</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-4 space-y-4">
+    <section class="bg-white rounded-2xl p-4 shadow">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold">Usuarios registrados</h2>
+        <button id="btnNew" class="bg-[var(--vino)] text-white px-4 py-2 rounded-xl">Agregar usuario</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left bg-gray-100">
+              <th class="p-2">Nombre</th>
+              <th class="p-2">Correo</th>
+              <th class="p-2">Área</th>
+              <th class="p-2">Rol</th>
+              <th class="p-2">Activo</th>
+              <th class="p-2">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="urows"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal -->
+  <div id="modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-5 w-full max-w-lg shadow">
+      <h3 id="modalTitle" class="text-lg font-semibold mb-3">Nuevo usuario</h3>
+      <div class="grid md:grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm text-gray-600">Nombre</label>
+          <input id="fName" class="border rounded-lg px-3 py-2 w-full">
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600">Correo</label>
+          <input id="fEmail" type="email" class="border rounded-lg px-3 py-2 w-full">
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600">Área</label>
+          <input id="fArea" class="border rounded-lg px-3 py-2 w-full" placeholder="ID o nombre de área">
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600">Rol</label>
+          <select id="fRole" class="border rounded-lg px-3 py-2 w-full">
+            <option value="ADMIN">ADMIN</option>
+            <option value="TECNICO">TECNICO</option>
+            <option value="SOLICITANTE">SOLICITANTE</option>
+          </select>
+        </div>
+        <div class="md:col-span-2" id="passWrap">
+          <label class="block text-sm text-gray-600">Contraseña (al crear)</label>
+          <input id="fPass" type="password" class="border rounded-lg px-3 py-2 w-full">
+        </div>
+      </div>
+      <div class="mt-4 flex justify-between gap-2">
+        <label class="text-sm flex items-center gap-2"><input type="checkbox" id="fActive" checked> Activo</label>
+        <div class="flex gap-2">
+          <button id="btnCancel" class="px-4 py-2 rounded-xl border">Cancelar</button>
+          <button id="btnSave" class="px-4 py-2 rounded-xl bg-[var(--vino)] text-white">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const urows = document.getElementById('urows');
+    const modal = document.getElementById('modal');
+    const btnNew = document.getElementById('btnNew');
+    const btnSave = document.getElementById('btnSave');
+    const btnCancel = document.getElementById('btnCancel');
+    const modalTitle = document.getElementById('modalTitle');
+    const fName = document.getElementById('fName');
+    const fEmail = document.getElementById('fEmail');
+    const fArea = document.getElementById('fArea');
+    const fRole = document.getElementById('fRole');
+    const fPass = document.getElementById('fPass');
+    const fActive = document.getElementById('fActive');
+    const passWrap = document.getElementById('passWrap');
+
+    let editingId = null;
+
+    function openModal(title, data=null){
+      modalTitle.textContent = title;
+      modal.classList.remove('hidden');
+      if(data){
+        fName.value=data.nombre||data.name||'';
+        fEmail.value=data.email||'';
+        fArea.value=data.area_name||data.area||'';
+        fRole.value=data.rol||data.role||'SOLICITANTE';
+        fActive.checked = (data.is_active==1 || data.is_active===true);
+        fPass.value='';
+        passWrap.classList.add('hidden');
+      }else{
+        fName.value=fEmail.value=fArea.value=fPass.value='';
+        fRole.value='SOLICITANTE';
+        fActive.checked = true;
+        passWrap.classList.remove('hidden');
+      }
+    }
+    function closeModal(){ modal.classList.add('hidden'); editingId=null; }
+
+    async function loadUsers(){
+      const r = await fetch('/api/admin/users');
+      const users = await r.json();
+      urows.innerHTML='';
+      (users||[]).forEach(u=>{
+        const tr=document.createElement('tr'); tr.className='border-b';
+        tr.innerHTML=`
+          <td class="p-2 font-medium">${u.nombre}</td>
+          <td class="p-2">${u.email||'—'}</td>
+          <td class="p-2">${u.area_name||'—'}</td>
+          <td class="p-2">${u.rol}</td>
+          <td class="p-2">${u.is_active ? 'Sí' : 'No'}</td>
+          <td class="p-2">
+            <button class="edit px-3 py-1 rounded-lg border mr-2" data-id="${u.id}">Editar</button>
+            <button class="del px-3 py-1 rounded-lg bg-red-600 text-white" data-id="${u.id}">Eliminar</button>
+          </td>
+        `;
+        urows.appendChild(tr);
+        tr.querySelector('.edit').addEventListener('click', ()=>{ editingId = u.id; openModal('Editar usuario', u); });
+        tr.querySelector('.del').addEventListener('click', async ()=>{
+          if(!confirm('¿Eliminar usuario?')) return;
+          const res = await fetch(`/api/admin/users/${u.id}`,{ method:'DELETE' });
+          if(res.ok) loadUsers(); else alert('No se pudo eliminar. Verifica relaciones.');
+        });
+      });
+    }
+
+    btnNew.addEventListener('click', ()=> openModal('Nuevo usuario'));
+    btnCancel.addEventListener('click', closeModal);
+
+    btnSave.addEventListener('click', async ()=>{
+      const payload = {
+        name: fName.value.trim(),
+        email: fEmail.value.trim(),
+        area: fArea.value.trim(),
+        role: fRole.value
+      };
+      if(!editingId){ payload.password = fPass.value.trim(); }
+      else { payload.is_active = fActive.checked; }
+
+      let res;
+      if(editingId){
+        res = await fetch(`/api/admin/users/${editingId}`,{
+          method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+        });
+      }else{
+        res = await fetch('/api/admin/users',{
+          method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+        });
+      }
+      if(res.ok){ closeModal(); loadUsers(); } else { alert('Error al guardar.'); }
+    });
+
+    loadUsers();
+  </script>
+</body>
+</html>

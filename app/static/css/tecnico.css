@@ -1,0 +1,402 @@
+/* =========================================================
+   Panel Técnico — Tema institucional (hero), nav y UI común
+   ========================================================= */
+:root{
+  /* Base */
+  --bg:#f9f4f5; --card:#fff; --line:#e3cfd2; --ink:#2b0a10; --muted:#7b3a44;
+  /* Marca */
+  --brand:#5a0f1d; --brand2:#781c2f; --accent:#a12033;
+  /* Layout */
+  --h-ctrl:44px; --radius:10px; --space:14px;
+  /* Hero (puedes sobreescribir desde el <style> inline) */
+  --hero-url:url("../img/gobierno.jpg");
+  /* Alto uniforme de los botones del nav */
+  --nav-h:56px;
+}
+
+*{ box-sizing:border-box }
+html,body{ max-width:100%; overflow-x:hidden } /* evita scroll horizontal */
+body{
+  margin:0;
+  font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  background:var(--bg); color:var(--ink)
+}
+
+/* ===== HERO con imagen (igual que solicitante) ===== */
+.site-header.hero{
+  position:relative; min-height:clamp(180px,28vw,320px);
+  display:flex; align-items:center; overflow:hidden; color:#fff;
+  border-radius:0 0 var(--radius) var(--radius);
+  box-shadow:0 10px 24px rgba(90,15,29,.18);
+  background-image:var(--hero-url); background-size:cover; background-position:center; background-repeat:no-repeat;
+}
+.site-header.hero::after{
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(180deg, rgba(20,6,9,.25), rgba(90,15,29,.55));
+}
+.brand-row{
+  position:relative; z-index:1;
+  width:min(1160px,92vw); margin:0 auto;
+  display:flex; align-items:flex-end; min-height:inherit; padding-bottom:18px
+}
+.hero-title{
+  display:inline-flex; flex-direction:column; gap:2px; padding:10px 16px; border-radius:14px; color:#fff;
+  background:rgba(20,6,9,.28);
+  backdrop-filter:blur(6px) saturate(120%); -webkit-backdrop-filter:blur(6px) saturate(120%);
+  border:1px solid rgba(255,255,255,.22); box-shadow:0 10px 26px rgba(0,0,0,.25)
+}
+.site-title{
+  margin:0; font-weight:800; text-transform:uppercase; letter-spacing:.06em;
+  line-height:1.05; font-size:clamp(18px,2.1vw,30px); color:#fff;
+  text-shadow:0 2px 10px rgba(0,0,0,.35)
+}
+
+/* ===== Menú (idéntico al solicitante) — MISMO TAMAÑO ===== */
+.sol-nav{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(180px,1fr));
+  grid-auto-rows:var(--nav-h); /* alto uniforme */
+  gap:10px;
+  width:min(1160px,92vw);
+  margin:12px auto 0;
+  padding:0 12px;
+}
+.nav-link{
+  height:100%; width:100%;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  text-align:center; line-height:1.1; white-space:normal;
+  padding:0 16px; border-radius:999px; text-decoration:none;
+  background:#fff; color:var(--brand); font-weight:800; letter-spacing:.02em;
+  border:1px solid var(--line); box-shadow:0 6px 14px rgba(90,15,29,.08);
+}
+.nav-link:hover{ filter:brightness(1.02) }
+.nav-link.active{
+  background:linear-gradient(180deg,var(--brand2),var(--brand));
+  color:#fff; border-color:transparent; box-shadow:0 10px 20px rgba(90,15,29,.18);
+}
+.nav-link--logout{
+  background:linear-gradient(180deg, var(--brand2), var(--brand));
+  color:#fff !important; border:none; box-shadow:0 6px 14px rgba(90,15,29,.18)
+}
+/* En móviles: 2×2 manteniendo alto uniforme */
+@media (max-width:640px){
+  .sol-nav{ grid-template-columns:1fr 1fr; }
+}
+
+/* ===== Layout de páginas ===== */
+.container{ width:min(1160px,92vw); margin:0 auto; padding:0 12px }
+.intro{
+  font-size:15px; line-height:1.6; color:var(--muted);
+  background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+  padding:12px 14px; margin:12px 0 14px; box-shadow:0 8px 18px rgba(90,15,29,.08)
+}
+.toolbar{ display:flex; gap:8px; align-items:center; margin:10px 0 16px; flex-wrap:wrap }
+.toolbar .spacer{ flex:1 }
+
+/* ===== Botones/inputs ===== */
+.btn{
+  height:36px; display:inline-flex; align-items:center; justify-content:center;
+  padding:0 14px; border-radius:999px; border:1px solid var(--line);
+  background:#fff; font-weight:800; color:var(--ink); cursor:pointer
+}
+.btn-primary{ background:linear-gradient(180deg,var(--brand2),var(--brand)); border:none; color:#fff; box-shadow:0 8px 18px rgba(90,15,29,.18) }
+.btn:disabled{ opacity:.6; cursor:not-allowed }
+
+/* Buscador — estilo consistente y sin borde negro */
+.toolbar input[type="search"].btn{
+  -webkit-appearance:none; appearance:none;
+  height:36px; flex:1 1 300px; min-width:200px;
+  padding:0 14px; border-radius:999px; border:1px solid var(--line);
+  background:#fff; color:var(--ink); font-weight:800;
+  outline:none; box-shadow:none;
+}
+.toolbar input[type="search"].btn::placeholder{ color:var(--muted); opacity:.95; font-weight:700 }
+.toolbar input[type="search"].btn:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(161,32,51,.18);
+}
+.toolbar input[type="search"].btn::-webkit-search-cancel-button{
+  -webkit-appearance:none; height:18px; width:18px; cursor:pointer; opacity:.55;
+}
+@media (max-width:640px){
+  .toolbar input[type="search"].btn{ flex:1 1 100%; min-width:0 }
+}
+
+/* ===== Tarjetas de tickets ===== */
+.ticket-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:12px }
+.tk-card{
+  background:#fff; border:1px solid var(--line); border-radius:12px;
+  padding:12px; box-shadow:0 8px 18px rgba(90,15,29,.08);
+  display:flex; flex-direction:column; gap:10px;
+}
+.tk-h{ display:flex; align-items:center; justify-content:space-between; color:var(--muted); font-weight:700 }
+.tk-area{ font-size:12px }
+.tk-title{ margin:0; font-size:16px; font-weight:800; color:var(--brand) }
+.tk-meta{ display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--muted) }
+.tk-f{ display:flex; gap:8px; justify-content:flex-end }
+.empty{ padding:10px; color:var(--muted) }
+
+/* Badges de estado */
+.tk-estado{ padding:2px 8px; border-radius:999px; font-size:12px; font-weight:800 }
+.tk-pendiente{ background:#fff1f1; color:#7e1320; border:1px solid #e7c3c8 }
+.tk-en_curso{ background:#fff7e8; color:#7a4a10; border:1px solid #efd6ab }
+.tk-resuelto{ background:#e9f7ef; color:#1b6b3a; border:1px solid #bfe5cc }
+.tk-cancelado{ background:#eee; color:#555; border:1px solid #ddd }
+
+/* ===== Dialog ===== */
+.tk-dialog{ border:none; border-radius:14px; padding:0; width:min(720px,92vw) }
+.tk-dialog::backdrop{ background:rgba(0,0,0,.35) }
+.tk-body{ padding:16px }
+.tk-actions{ display:flex; gap:8px; justify-content:flex-end; padding:12px 16px; border-top:1px solid var(--line) }
+.tk-kv{ display:flex; gap:8px; margin:4px 0; color:var(--muted) }
+.tk-kv span{ width:120px; font-weight:800; color:var(--brand) }
+.tk-desc{ margin-top:10px }
+.tk-desc > span{ display:block; font-weight:800; color:var(--brand); margin-bottom:6px }
+.tk-desc pre{ white-space:pre-wrap; background:#faf7f8; border:1px solid var(--line); padding:10px; border-radius:8px; margin:0 }
+
+/* Área de notas dentro del diálogo */
+.nota-box{ margin-top:10px }
+.nota-box textarea{ width:100%; min-height:90px; border:1px solid var(--line); border-radius:8px; padding:8px; font-family:inherit }
+
+/* ===== Shimmer de carga ===== */
+.skeleton{
+  background:linear-gradient(90deg,#f1e6e8 25%,#f7eef0 37%,#f1e6e8 63%);
+  background-size:400% 100%; animation:shimmer 1.2s infinite
+}
+@keyframes shimmer{ 0%{background-position:100% 0} 100%{background-position:-100% 0} }
+
+/* ===== Toast ===== */
+.toast-wrap{ position:fixed; right:22px; bottom:22px; z-index:9999; display:flex; flex-direction:column; gap:12px; pointer-events:none }
+.toast{
+  pointer-events:auto; min-width:260px; max-width:420px; padding:12px 14px; border-radius:14px;
+  display:grid; grid-template-columns:24px 1fr; gap:10px; align-items:center;
+  color:#1b0d0f; background:rgba(255,255,255,.95); border:1px solid var(--line);
+  backdrop-filter:blur(6px) saturate(120%); -webkit-backdrop-filter:blur(6px) saturate(120%);
+  box-shadow:0 10px 24px rgba(0,0,0,.18); transform:translateY(12px); opacity:0; animation:toast-in .18s ease forwards
+}
+.toast--hide{ animation:toast-out .15s ease forwards }
+.toast__icon{ width:24px; height:24px; opacity:.95; fill:#1b6b3a }
+.toast__text{ margin:0; font-weight:800 }
+@keyframes toast-in{ to{transform:translateY(0); opacity:1} }
+@keyframes toast-out{ to{transform:translateY(12px); opacity:0} }
+
+/* ===== Responsive generales ===== */
+@media (max-width:640px){
+  .brand-row{ justify-content:center; padding-bottom:14px }
+  .hero-title{ padding:8px 12px; border-radius:12px }
+  .site-title{ font-size:clamp(18px,5vw,24px); letter-spacing:.05em }
+}
+
+/* ==== FIX móviles para <dialog> del técnico ==== */
+.tk-dialog{
+  width:min(560px,92vw);       /* un poco más angosto en móvil */
+  max-width:92vw;
+}
+.tk-dialog[open]{
+  position:fixed; inset:0; margin:auto; transform:none; z-index:1000;
+}
+.tk-actions{ flex-wrap:wrap }                  /* permite salto de línea en controles */
+.tk-desc pre{ max-height:35vh; overflow:auto } /* evita modal gigante por descripciones */
+
+@media (max-width:480px){
+  .tk-kv{ flex-direction:column; align-items:flex-start }
+  .tk-kv span{ width:auto; margin-bottom:2px }
+  .btn{ padding:0 12px; min-width:auto }
+}
+/* === Evidencias: hacerlo pequeño y uniforme ===================== */
+/* Aplica SOLO a archivos servidos desde /uploads/tickets/ */
+img[src*="/uploads/tickets/"]{
+  /* tamaño reducido y responsivo */
+  width: clamp(160px, 40vw, 420px);
+  height: clamp(120px, 22vw, 220px);
+  object-fit: cover;          /* recorta sin deformar */
+  display: block;
+  margin: 8px auto;           /* centra la miniatura */
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.12);
+  mix-blend-mode: normal;     /* por si algún estilo le da tinte */
+  filter: none;
+}
+
+/* Opcional: en pantallas grandes, aún más compacto */
+@media (min-width: 1024px){
+  img[src*="/uploads/tickets/"]{
+    width: 320px;
+    height: 190px;
+  }
+}
+
+/* === (Opcional) Si tienes un contenedor de evidencias en grid ===
+   Si envuelves las imágenes en <div class="evidencias">, activa este bloque
+   para verlas como rejilla de miniaturas. */
+.evidencias{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+.evidencias img[src*="/uploads/tickets/"]{
+  width: 100%;
+  height: 170px;              /* miniatura */
+  margin: 0;
+}
+/* === Evidencias: hacerlo pequeño y uniforme ===================== */
+/* Aplica SOLO a archivos servidos desde /uploads/tickets/ */
+img[src*="/uploads/tickets/"]{
+  /* tamaño reducido y responsivo */
+  width: clamp(160px, 40vw, 420px);
+  height: clamp(120px, 22vw, 220px);
+  object-fit: cover;          /* recorta sin deformar */
+  display: block;
+  margin: 8px auto;           /* centra la miniatura */
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.12);
+  mix-blend-mode: normal;     /* por si algún estilo le da tinte */
+  filter: none;
+}
+
+/* Opcional: en pantallas grandes, aún más compacto */
+@media (min-width: 1024px){
+  img[src*="/uploads/tickets/"]{
+    width: 320px;
+    height: 190px;
+  }
+}
+
+/* === (Opcional) Si tienes un contenedor de evidencias en grid ===
+   Si envuelves las imágenes en <div class="evidencias">, activa este bloque
+   para verlas como rejilla de miniaturas. */
+.evidencias{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+.evidencias img[src*="/uploads/tickets/"]{
+  width: 100%;
+  height: 170px;              /* miniatura */
+  margin: 0;
+}
+/* ===== PERFIL DEL TÉCNICO ============================================ */
+:root{
+  --vino: #8b1e3f;
+  --vino-2: #b53a5f;
+  --card-bg: #fff;
+  --text-900: #1f1f1f;
+  --text-600: #555;
+  --muted: #8c8c8c;
+}
+
+.tech-profile{
+  max-width: 1100px;
+  margin: 16px auto 8px;
+  padding: 14px 16px;
+  background: var(--card-bg);
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.06);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Avatar con iniciales */
+.tech-avatar{
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--vino), var(--vino-2));
+  color: #fff;
+  display: grid; place-items: center;
+  font-weight: 800;
+  letter-spacing: .5px;
+  user-select: none;
+  box-shadow: 0 8px 18px rgba(139,30,63,.35);
+}
+
+/* Bloque de datos */
+.tech-info .name{
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-900);
+  line-height: 1.2;
+}
+.tech-info .meta{
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-top: 2px;
+  color: var(--text-600);
+  font-size: .92rem;
+}
+.tech-info .tag{
+  background: rgba(139,30,63,.08);
+  color: var(--vino);
+  border: 1px solid rgba(139,30,63,.18);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+/* Stats */
+.tech-stats{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(90px, 1fr));
+  gap: 10px;
+  align-items: center;
+}
+.tech-stat{
+  text-align: center;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,.06);
+  background: #fafafa;
+}
+.tech-stat .num{
+  font: 800 1.15rem/1 var(--font, Inter, system-ui, sans-serif);
+  color: var(--vino);
+  display: block;
+}
+.tech-stat .lbl{
+  font-size: .82rem;
+  color: var(--muted);
+}
+
+/* Responsive */
+@media (max-width: 720px){
+  .tech-profile{
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    padding: 12px;
+  }
+  .tech-stats{
+    grid-column: 1 / -1;
+  }
+  .tech-avatar{ width: 56px; height: 56px; font-size: 1rem; }
+}
+/* ===== Resolver ticket (observaciones + evidencias) =================== */
+.solve-block{
+  padding: 10px 16px 0;
+  display: grid;
+  gap: 8px;
+}
+.solve-block textarea{
+  width: 100%;
+  border: 1px solid var(--line, #e6e6e6);
+  border-radius: 10px;
+  padding: 8px 10px;
+  resize: vertical;
+  min-height: 84px;
+}
+.solve-block input[type="file"]{
+  width: 100%;
+}
+.solve-block .files-hint{
+  font-size: .85rem;
+  color: #777;
+}
+
+/* Miniaturas de evidencias (si las muestras en el detalle) */
+.evidencias{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px,1fr));
+  gap: 12px;
+}
+.evidencias img{ width:100%; height:170px; object-fit:cover; border-radius:12px; }

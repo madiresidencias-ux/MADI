@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Solicitante · Mi ticket</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/solicitante.css') }}">
+
+  <style>
+    :root{
+      --gap:12px;
+      --radius:12px;
+    }
+
+    .status-pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;font-weight:800}
+    .st-pend{background:#fff8e6;color:#8a5a00;border:1px solid #f3d29c}
+    .st-curso{background:#e7f1ff;color:#0f4aa1;border:1px solid #b8d2ff}
+    .st-res{background:#e8f7ec;color:#0c6d37;border:1px solid #bfe8ca}
+    .st-canc{background:#f6e9ef;color:#7a0e2b;border:1px solid #e1c2cd}
+
+    .ticket-head{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    .main-grid{display:grid;grid-template-columns: 1.2fr .8fr;gap:14px}
+    @media (max-width: 900px){ .main-grid{grid-template-columns:1fr} }
+
+    .info-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+    .info-title{font-weight:800;color:#4a0c16;margin-bottom:6px}
+    .kv{display:grid;grid-template-columns: 200px 1fr;gap:6px 10px}
+    .kv div{padding:4px 0}
+    .kv .k{color:#555;font-weight:700}
+    .kv .v{color:#222}
+    .desc-box{white-space:pre-wrap;border:1px dashed var(--line);border-radius:10px;padding:10px;background:#fffdfd}
+
+    .gallery{display:flex;flex-wrap:wrap;gap:10px}
+    .thumb{width:160px;height:120px;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#fff}
+    .thumb img{width:100%;height:100%;object-fit:cover}
+
+    .btn{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:#fff;font-weight:800;color:#5a0f1d;cursor:pointer}
+    .btn-primary{background:linear-gradient(180deg,var(--brand2),var(--brand));border:none;color:#fff;box-shadow:0 6px 14px rgba(90,15,29,.18)}
+    .btn[disabled]{opacity:.6;pointer-events:none}
+    .btn-sm{height:30px;font-size:12px;padding:0 12px}
+
+    /* Status row: más respiración entre estado y encuesta */
+    #statusRow{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+    #statusRow .badge{background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-weight:700}
+    #statusRow .survey-wrap{display:inline-flex;align-items:center;margin-left:8px}
+
+    /* Listado (acordeón) */
+    .tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 10px}
+    .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 10px;font-weight:700;cursor:pointer}
+    .chip.active{background:linear-gradient(180deg,var(--brand2),var(--brand));border:none;color:#fff}
+    .search{flex:1;min-width:160px}
+    .search input{width:100%;height:36px;border:1px solid var(--line);border-radius:999px;padding:0 12px}
+
+    .acc{display:flex;flex-direction:column;gap:8px}
+    details.ticket{border:1px solid var(--line);border-radius:var(--radius);background:#fff}
+    details.ticket[open]{box-shadow:0 8px 20px rgba(0,0,0,.05)}
+    details.ticket summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;cursor:pointer;list-style:none}
+    details.ticket summary::-webkit-details-marker{display:none}
+    .sum-left{display:flex;gap:10px;align-items:center;min-width:0}
+    .sum-id{font-weight:800;white-space:nowrap}
+    .sum-title{font-weight:700;color:#222;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px}
+    .sum-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .sum-meta .tiny{font-size:12px;color:var(--muted)}
+    .acc-body{padding:10px 12px;border-top:1px dashed var(--line);display:grid;gap:8px}
+    .row-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+    /* Empty states */
+    .empty{border:1px dashed var(--line);background:#fff;border-radius:var(--radius);padding:16px;text-align:center;color:var(--muted)}
+    .empty h3{margin:0 0 6px;font-weight:800;color:#4a0c16}
+    .empty p{margin:0 0 12px}
+
+    /* Utilidades */
+    .hidden{display:none !important}
+    .muted{color:var(--muted)}
+    .tiny{font-size:12px}
+  </style>
+</head>
+<body>
+  <header class="site-header hero">
+    <div class="container brand-row"><div class="hero-title"><h1 class="site-title">SOLICITANTE</h1></div></div>
+  </header>
+
+  <nav class="sol-nav container">
+    <a class="nav-link" href="{{ url_for('solicitante_form') }}">Nueva solicitud</a>
+    <a class="nav-link active" href="{{ url_for('solicitante_tickets') }}">Mi ticket</a>
+    <a class="nav-link nav-link--logout" href="{{ url_for('logout') }}">Salir</a>
+  </nav>
+
+  <section class="card container">
+    <div class="ticket-head">
+      <div>
+        <div class="section-title">Detalle del ticket</div>
+        <div id="titleLine" class="muted tiny">Cargando…</div>
+      </div>
+      <div class="cta-row">
+        <button id="btnRecargar" class="btn">Recargar</button>
+      </div>
+    </div>
+
+    <div id="statusRow" style="margin:10px 0 14px"></div>
+
+    <div class="main-grid">
+      <!-- Columna 1: Detalle -->
+      <div class="info-card">
+        <div id="detailPanel">
+          <div class="info-title">Información</div>
+          <div class="kv">
+            <div class="k">Folio</div><div class="v" id="kvId">—</div>
+            <div class="k">Tipo de servicio</div><div class="v" id="kvTipo">—</div>
+            <div class="k">Solicitante</div><div class="v" id="kvSolicitante">—</div>
+            <div class="k">Área</div><div class="v" id="kvArea">—</div>
+            <div class="k">Técnico principal</div><div class="v" id="kvTecPrincipal">—</div>
+            <div class="k">Técnicos</div><div class="v" id="kvTecnicos">—</div>
+            <div class="k">Creado</div><div class="v" id="kvCreado">—</div>
+            <div class="k">Cierre</div><div class="v" id="kvCierre">—</div>
+            <div class="k">Asignado</div><div class="v" id="kvAsignado">—</div>
+            <div class="k">T. Servicio</div><div class="v" id="kvTServ">—</div>
+            <div class="k">T. Atención</div><div class="v" id="kvTAt">—</div>
+          </div>
+
+          <div style="margin-top:12px">
+            <div class="info-title">Descripción</div>
+            <div id="descBox" class="desc-box">—</div>
+          </div>
+
+          <div style="margin-top:12px">
+            <div class="info-title">Evidencias</div>
+            <div id="gal" class="gallery"><div class="muted">Cargando…</div></div>
+          </div>
+        </div>
+
+        <!-- Empty state del panel -->
+        <div id="detailEmpty" class="empty hidden">
+          <h3>Sin tickets abiertos</h3>
+          <p>No encontramos tickets en curso o pendientes.</p>
+          <div class="row-actions" style="justify-content:center">
+            <a class="btn" href="{{ url_for('solicitante_form') }}">Crear nueva solicitud</a>
+            <button class="btn" id="btnRefrescar2">Recargar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Columna 2: Listado -->
+      <div class="info-card">
+        <div class="info-title">Mis tickets</div>
+        <div class="tools">
+          <div class="chip active" data-filter="abiertos">Abiertos</div>
+          <div class="chip" data-filter="finalizados">Finalizados</div>
+          <div class="chip" data-filter="todos">Todos</div>
+          <div class="search"><input id="searchBox" type="search" placeholder="Buscar por folio o asunto…"></div>
+        </div>
+
+        <div id="listContainer" class="acc">
+          <div class="muted">Cargando listado…</div>
+        </div>
+
+        <div id="listEmpty" class="empty hidden">
+          <h3>No hay tickets</h3>
+          <p>Aún no has creado solicitudes.</p>
+          <a class="btn" href="{{ url_for('solicitante_form') }}">Crear nueva solicitud</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+/* ===== Utilidades de red ===== */
+async function fetchJSON(url){
+  const r = await fetch(url, { headers:{Accept:'application/json'} });
+  const txt = await r.text();
+  try { return JSON.parse(txt); } catch { return []; }
+}
+
+/* ===== Normalizadores ===== */
+const up = (s)=> (s ?? '').toString().trim().toUpperCase();
+function isFinalizado(estado){
+  const e = up(estado);
+  return e === 'RESUELTO' || e === 'CANCELADO' || e === 'FINALIZADO' || e === 'FINALIZADOS' || e === 'CERRADO';
+}
+function isAbierto(estado){
+  const e = up(estado);
+  return e === 'PENDIENTE' || e === 'EN_CURSO' || e === 'EN CURSO';
+}
+function encuestaPendiente(val){
+  if (val === undefined || val === null) return true;
+  if (typeof val === 'boolean') return val === false;
+  const n = Number(val);
+  if (!Number.isNaN(n)) return n === 0;
+  const s = String(val).trim().toLowerCase();
+  return s === '' || s === '0' || s === 'false' || s === 'no';
+}
+
+/* ===== UI helpers ===== */
+function pill(estado){
+  const e = up(estado);
+  const map = {
+    'PENDIENTE': 'st-pend',
+    'EN_CURSO': 'st-curso',
+    'EN CURSO': 'st-curso',
+    'RESUELTO': 'st-res',
+    'CANCELADO': 'st-canc',
+    'FINALIZADO': 'st-res',
+    'CERRADO': 'st-res'
+  };
+  const cls = map[e] || 'st-pend';
+  return `<span class="status-pill ${cls}" title="Estado">${e || '—'}</span>`;
+}
+function fmt(s, fallback='-'){ return s && String(s).trim() ? s : fallback; }
+
+/* ===== Estado global ===== */
+let ALL = [];              // todos los tickets (con campos básicos)
+let CURRENT_ID = null;     // id seleccionado
+
+/* ===== DOM refs ===== */
+const statusRow = document.getElementById('statusRow');
+const titleLine = document.getElementById('titleLine');
+const listContainer = document.getElementById('listContainer');
+const listEmpty = document.getElementById('listEmpty');
+const detailPanel = document.getElementById('detailPanel');
+const detailEmpty = document.getElementById('detailEmpty');
+const btnRecargar = document.getElementById('btnRecargar');
+const btnRefrescar2 = document.getElementById('btnRefrescar2');
+const searchBox = document.getElementById('searchBox');
+
+/* ===== Renderers ===== */
+function setStatus(ticket){
+  const showSurvey = isFinalizado(ticket.estado) && encuestaPendiente(ticket.encuestada);
+  statusRow.innerHTML = `
+    ${pill(ticket.estado)}
+    ${ showSurvey ? `<span class="survey-wrap"><button id="surveyBtn" class="btn btn-primary btn-sm">Responder encuesta</button></span>` : '' }
+    <span class="badge">Folio: <strong>${ticket.id}</strong></span>
+    <span class="badge">Técnico principal: <strong>${fmt(ticket.tecnico_principal)}</strong></span>
+  `;
+  if (showSurvey){
+    document.getElementById('surveyBtn').onclick = () =>
+      window.location.href = '/solicitante/encuesta/' + encodeURIComponent(ticket.id);
+  }
+}
+
+function renderDetalle(t){
+  // Mostrar panel y ocultar empty
+  detailPanel.classList.remove('hidden');
+  detailEmpty.classList.add('hidden');
+
+  titleLine.textContent = `Folio ${t.id} · ${t.asunto || '(sin asunto)'}`;
+  document.getElementById('kvId').textContent = t.id;
+  document.getElementById('kvTipo').textContent = fmt(t.asunto);
+  document.getElementById('kvSolicitante').textContent = fmt(t.solicitante_nombre);
+  document.getElementById('kvArea').textContent = fmt(t.area);
+  document.getElementById('kvTecPrincipal').textContent = fmt(t.tecnico_principal);
+  document.getElementById('kvTecnicos').textContent = fmt(t.tecnicos);
+  document.getElementById('kvCreado').textContent = fmt(t.creado_en);
+  document.getElementById('kvCierre').textContent = fmt(t.cerrado_en);
+  document.getElementById('kvAsignado').textContent = fmt(t.asignado_en);
+  document.getElementById('kvTServ').textContent = fmt(t.t_servicio);
+  document.getElementById('kvTAt').textContent = fmt(t.t_atencion);
+  document.getElementById('descBox').textContent = fmt(t.descripcion);
+
+  const g = document.getElementById('gal');
+  g.innerHTML = '';
+  if (Array.isArray(t.evidencias) && t.evidencias.length){
+    t.evidencias.forEach(ev=>{
+      const d = document.createElement('div'); d.className = 'thumb';
+      const img = new Image(); img.src = ev.url; img.alt = ev.name || 'Evidencia';
+      d.appendChild(img); g.appendChild(d);
+    });
+  } else {
+    g.innerHTML = '<div class="muted">Sin evidencias.</div>';
+  }
+
+  setStatus(t);
+}
+
+function renderEmptyPanel(kind='no-open'){
+  // Ocultar panel de datos y mostrar estado vacío
+  detailPanel.classList.add('hidden');
+  detailEmpty.classList.remove('hidden');
+  statusRow.innerHTML = '';
+  if (kind === 'no-open'){
+    titleLine.textContent = 'Sin tickets abiertos';
+  } else {
+    titleLine.textContent = 'Aún no has creado tickets';
+  }
+}
+
+/* Construye 1 acordeón */
+function ticketDetailsItem(row){
+  const encuestaBtn = (isFinalizado(row.estado) && encuestaPendiente(row.encuestada))
+    ? `<button class="btn btn-primary btn-sm js-enc" data-id="${row.id}">Responder encuesta</button>` : '';
+
+  return `
+  <details class="ticket" data-id="${row.id}">
+    <summary>
+      <div class="sum-left">
+        <span class="sum-id">#${row.id}</span>
+        <span class="sum-title">${fmt(row.asunto, '(sin asunto)')}</span>
+      </div>
+      <div class="sum-meta">
+        ${pill(row.estado)}
+        <span class="tiny">Creado: ${fmt(row.creado_en)}</span>
+      </div>
+    </summary>
+    <div class="acc-body">
+      <div class="tiny muted">Área: ${fmt(row.area)} · Téc. principal: ${fmt(row.tecnico_principal)}</div>
+      <div class="row-actions">
+        <button class="btn btn-sm js-select" data-id="${row.id}">Seleccionar</button>
+        ${encuestaBtn}
+      </div>
+    </div>
+  </details>`;
+}
+
+function applyFilterAndSearch(filter, query){
+  query = (query||'').trim().toLowerCase();
+  let rows = ALL.slice();
+
+  if (filter === 'abiertos') rows = rows.filter(r => isAbierto(r.estado));
+  else if (filter === 'finalizados') rows = rows.filter(r => isFinalizado(r.estado));
+  // 'todos' no filtra
+
+  if (query){
+    rows = rows.filter(r =>
+      String(r.id).includes(query) ||
+      (r.asunto && r.asunto.toLowerCase().includes(query))
+    );
+  }
+
+  // Orden: más recientes primero por creado_en o id
+  rows.sort((a,b)=> (new Date(b?.creado_en||0) - new Date(a?.creado_en||0)) || ((b?.id||0)-(a?.id||0)));
+
+  listContainer.innerHTML = rows.map(ticketDetailsItem).join('') || '';
+  listEmpty.classList.toggle('hidden', rows.length>0);
+  listContainer.classList.toggle('hidden', rows.length===0);
+}
+
+/* ===== Carga de datos ===== */
+async function fetchGroup(urls){
+  let acc = [];
+  for (const u of urls){
+    try{
+      const arr = await fetchJSON(u);
+      if (Array.isArray(arr) && arr.length) acc = acc.concat(arr);
+    }catch{}
+  }
+  // De-dupe por id
+  const map = new Map();
+  for (const r of acc){ if (r && r.id != null && !map.has(r.id)) map.set(r.id, r); }
+  return Array.from(map.values());
+}
+
+async function loadAllTickets(){
+  const abiertos = await fetchGroup([
+    '/api/mis-tickets?estado=PENDIENTE',
+    '/api/mis-tickets?estado=EN_CURSO',
+    '/api/mis-tickets?estado=En%20curso'
+  ]);
+  const finalizados = await fetchGroup([
+    '/api/mis-tickets?estado=FINALIZADOS',
+    '/api/mis-tickets?estado=RESUELTO',
+    '/api/mis-tickets?estado=CANCELADO'
+  ]);
+  const all = [];
+  abiertos.forEach(x => all.push(x));
+  // evita duplicar si el backend entrega estados raros
+  const idsAbiertos = new Set(abiertos.map(x=>x.id));
+  finalizados.forEach(x => { if (!idsAbiertos.has(x.id)) all.push(x); });
+
+  ALL = all;
+}
+
+async function loadTicketById(id){
+  CURRENT_ID = id;
+  try{
+    const det = await fetchJSON(`/api/solicitante/tickets/${id}/detalle`);
+    if (det && (det.ok || det.ticket)){
+      renderDetalle(det.ticket || det);
+    } else {
+      // fallback básico
+      const base = ALL.find(x=>x.id==id) || { id, asunto:'(sin asunto)' };
+      renderDetalle(Object.assign({ descripcion:'-', evidencias:[] }, base));
+    }
+  }catch{
+    const base = ALL.find(x=>x.id==id) || { id, asunto:'(sin asunto)' };
+    renderDetalle(Object.assign({ descripcion:'-', evidencias:[] }, base));
+  }
+}
+
+async function boot(){
+  await loadAllTickets();
+
+  // Render inicial: filtro "abiertos"
+  setActiveChip('abiertos');
+  applyFilterAndSearch('abiertos', '');
+
+  if (ALL.length === 0){
+    // Sin ningún ticket
+    renderEmptyPanel('no-tickets');
+    listEmpty.classList.remove('hidden');
+    listContainer.classList.add('hidden');
+    return;
+  }
+
+  // Si hay abiertos, NO mostramos el último finalizado: cargamos el primero abierto
+  const firstOpen = ALL.find(t => isAbierto(t.estado));
+  if (firstOpen){
+    await loadTicketById(firstOpen.id);
+  } else {
+    // No hay abiertos -> mostrar panel vacío (sin datos de último ticket)
+    renderEmptyPanel('no-open');
+  }
+}
+
+/* ===== Interacción ===== */
+function setActiveChip(name){
+  document.querySelectorAll('.chip').forEach(c=>{
+    c.classList.toggle('active', c.dataset.filter===name);
+  });
+}
+
+document.addEventListener('click', (e)=>{
+  const chip = e.target.closest('.chip');
+  if (chip){
+    const filter = chip.dataset.filter;
+    setActiveChip(filter);
+    applyFilterAndSearch(filter, searchBox.value);
+    return;
+  }
+
+  const enc = e.target.closest('.js-enc');
+  if (enc){
+    const id = enc.dataset.id;
+    e.stopPropagation();
+    window.location.href = '/solicitante/encuesta/' + encodeURIComponent(id);
+    return;
+  }
+
+  const sel = e.target.closest('.js-select');
+  if (sel){
+    const id = sel.dataset.id;
+    e.stopPropagation();
+    loadTicketById(id);
+    document.querySelector('.card.container')?.scrollIntoView({behavior:'smooth', block:'start'});
+    return;
+  }
+
+  const sum = e.target.closest('summary');
+  if (sum){
+    const host = sum.closest('details.ticket');
+    const id = host?.dataset.id;
+    if (id){
+      // Selecciona el ticket al primer clic (intuitivo)
+      loadTicketById(id);
+    }
+  }
+});
+
+searchBox.addEventListener('input', ()=>{
+  const active = document.querySelector('.chip.active')?.dataset.filter || 'abiertos';
+  applyFilterAndSearch(active, searchBox.value);
+});
+
+btnRecargar.addEventListener('click', async ()=>{
+  titleLine.textContent = 'Actualizando…';
+  await boot();
+  titleLine.textContent = 'Listo';
+});
+btnRefrescar2?.addEventListener('click', async ()=>{
+  await boot();
+});
+
+/* ===== Init ===== */
+(async function init(){ await boot(); })();
+  </script>
+</body>
+</html>

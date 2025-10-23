@@ -1,0 +1,141 @@
+:root{
+  --bg-image: url("../img/portada.png");
+  --tinta:#2b0f0f; --tinta-osc:#1b0909;
+  --blur:18px; --radius:22px;
+  --shadow:0 30px 60px rgba(0,0,0,.35);
+  --shadow-sm:0 10px 24px rgba(0,0,0,.25);
+  --panel-w:520px;
+  --brand:#f6e8d7; --brand-text:#2b0f0f;
+  --input-bg:rgba(255,255,255,.72); --input-ph:#6d4b4b;
+  --avatar-size:128px; --avatar-overlap:calc(var(--avatar-size)/2);
+  --bg-scrim:rgba(0,0,0,.35);
+  --bg-vignette:radial-gradient(80% 60% at 50% 40%, rgba(0,0,0,.18), transparent 60%);
+}
+
+*{box-sizing:border-box}
+
+html,body{
+  min-height:100dvh; margin:0;
+  font-family:'Montserrat', system-ui, Segoe UI, Roboto, Arial, sans-serif;
+  color:var(--tinta);
+  display:grid; place-items:center;
+  background-image:var(--bg-image);
+  background-size:cover; background-position:center; background-repeat:no-repeat;
+  overflow:hidden; position:relative;
+}
+
+body.login-page::before{
+  content:""; position:fixed; inset:0;
+  background:
+    var(--bg-vignette),
+    radial-gradient(120% 80% at 50% 10%, rgba(0,0,0,.22), transparent 55%),
+    linear-gradient(to bottom, rgba(0,0,0,.20), rgba(0,0,0,.20));
+  background-color:var(--bg-scrim);
+  pointer-events:none;
+}
+
+.card{
+  width:min(92vw,var(--panel-w));
+  background:linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.08));
+  border:1px solid rgba(255,255,255,.35);
+  backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur));
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:32px 32px 28px;
+  position:relative; color:#fff;
+  transform:translateY(calc(-1 * var(--avatar-overlap)));
+}
+
+.avatar{
+  position:absolute; inset-inline:0; top:calc(-1 * var(--avatar-overlap));
+  width:var(--avatar-size); height:var(--avatar-size); margin-inline:auto;
+  border-radius:50%; background:#fff; outline:8px solid rgba(255,255,255,.35);
+  box-shadow:0 12px 30px rgba(0,0,0,.35);
+  display:grid; place-items:center;
+}
+.avatar svg{width:calc(var(--avatar-size)/2); height:calc(var(--avatar-size)/2); fill:#8a4b4b}
+
+.login-title{
+  margin:56px 0 10px; text-align:center;
+  font-weight:900; letter-spacing:.06em;
+  font-size:clamp(28px,5vw,40px); color:#fff; text-shadow:0 1px 0 rgba(0,0,0,.05);
+}
+
+.field{position:relative; margin:14px 0}
+.field input{
+  width:100%;
+  padding:16px 56px 16px 48px; /* espacio para icono y botón ojo */
+  border-radius:12px; border:none;
+  background:var(--input-bg);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);
+  font-weight:700; color:var(--tinta-osc); outline:none;
+}
+.field input::placeholder{color:var(--input-ph); font-weight:700; letter-spacing:.02em}
+.field svg{
+  position:absolute; left:14px; top:50%; transform:translateY(-50%);
+  width:22px; height:22px; opacity:.9; fill:#5f3a3a;
+}
+
+.toggle-pass{
+  position:absolute; right:14px; top:50%; transform:translateY(-50%);
+  background:transparent; border:0; padding:6px; cursor:pointer;
+  display:grid; place-items:center; border-radius:8px; z-index:4;
+}
+.toggle-pass:hover{background:rgba(255,255,255,.22)}
+.toggle-pass:active{transform:translateY(-50%) scale(.98)}
+.toggle-pass svg{width:20px; height:20px; fill:#5f3a3a}
+
+.field input:focus{
+  box-shadow:
+    inset 0 0 0 2px rgba(0,0,0,.18),
+    0 0 0 3px rgba(255,255,255,.35);
+}
+
+.btn{
+  display:block; width:210px; margin:18px auto 6px;
+  border:none; cursor:pointer; padding:14px 18px;
+  font-weight:900; letter-spacing:.06em; border-radius:999px;
+  background:var(--brand); color:var(--brand-text);
+  box-shadow:var(--shadow-sm);
+  transition:transform .15s ease, box-shadow .15s ease, filter .15s ease;
+  text-transform:uppercase;
+}
+.btn:hover{transform:translateY(-2px); filter:brightness(.98); box-shadow:var(--shadow)}
+.btn:active{transform:translateY(0) scale(.99)}
+.btn[disabled]{opacity:.7; cursor:not-allowed; transform:none !important; filter:none !important}
+
+.msg{ text-align:center; font-size:13px; margin-top:8px; min-height:18px; color:#fbe7c9; font-weight:800 }
+.msg.ok{ color:#b7ffbf }
+
+.hint{ font-size:.85rem; color:#fbe7c9; margin-top:8px; text-align:center }
+
+@media (max-width:420px){
+  .card{ transform:translateY(0); padding-top:40px }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .btn{ transition:none }
+  .btn:hover{ transform:none }
+}
+/* --- FIX: que el ojito no se salga del input --- */
+.field{ position: relative; }
+.field input{ padding-right: 48px; }  /* antes 56px, sigue habiendo espacio suficiente */
+
+.toggle-pass{
+  position: absolute;
+  right: 8px;                 /* antes 14px: lo mete más en el campo */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;                /* tamaño fijo dentro del input */
+  height: 32px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 0;
+  padding: 0;                 /* evita que “crezca” y se desborde */
+  cursor: pointer;
+  z-index: 4;
+}
+.toggle-pass svg{ width: 18px; height: 18px; }
+.toggle-pass:hover{ background: rgba(255,255,255,.18); }
+.toggle-pass:active{ transform: translateY(-50%) scale(.98); }

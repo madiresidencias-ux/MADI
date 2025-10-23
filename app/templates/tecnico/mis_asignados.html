@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Técnico · Mis asignados</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tecnico.css') }}">
+  <style>:root{ --hero-url:url("{{ url_for('static', filename='img/gobierno.jpg') }}"); }</style>
+
+  <script defer src="{{ url_for('static', filename='js/tecnico.js') }}"></script>
+</head>
+<body data-scope="asignados">
+  <!-- HERO -->
+  <header class="site-header hero">
+    <div class="brand-row">
+      <div class="hero-title"><h1 class="site-title">TÉCNICO</h1></div>
+    </div>
+  </header>
+
+  <!-- Menú -->
+  <nav class="sol-nav">
+    <a class="nav-link" href="{{ url_for('tecnico_disponibles') }}">Disponibles</a>
+    <a class="nav-link active" href="{{ url_for('tecnico_asignados') }}">Mis asignados</a>
+    <a class="nav-link" href="{{ url_for('tecnico_historial') }}">Historial</a>
+    <a class="nav-link nav-link--logout" href="{{ url_for('root_index') }}">Salir</a>
+  </nav>
+
+  <!-- Perfil del técnico -->
+  <section id="techProfile" class="tech-profile" aria-label="Perfil del técnico"></section>
+
+  <main class="container" style="margin:16px auto 28px">
+    <h2 style="margin:8px 0 4px;">Mis asignados</h2>
+    <p class="intro">Tickets donde estás asignado (PENDIENTE/EN_CURSO). Puedes cambiar estado o agregar notas.</p>
+
+    <div class="toolbar">
+      <button id="btnRefresh" class="btn">Actualizar</button>
+      <div class="spacer"></div>
+      <input id="q" type="search" placeholder="Buscar por asunto / solicitante" class="btn" />
+    </div>
+
+    <div id="grid" class="ticket-grid"></div>
+  </main>
+
+  <!-- Diálogo de detalle -->
+  <dialog id="dlg" class="tk-dialog" aria-labelledby="dlgTitle">
+    <div id="dlgBody" class="tk-body"></div>
+
+    <!-- Bloque para resolver (solo visible al elegir RESUELTO) -->
+    <form id="solveBlock" class="solve-block" style="display:none" novalidate>
+      <label for="obsTecnico"><strong>Observaciones del técnico</strong>
+        <small>(obligatorias para resolver)</small>
+      </label>
+      <textarea id="obsTecnico" rows="3"
+                placeholder="Describe la solución, hallazgos y recomendaciones…" required></textarea>
+
+      <label for="evidencias"><strong>Añadir evidencias</strong>
+        <small>(opcional, hasta 3 imágenes)</small>
+      </label>
+      <input id="evidencias" type="file" accept="image/*" multiple />
+      <div class="files-hint">Se guardarán al confirmar “Guardar estado”.</div>
+    </form>
+
+    <div class="tk-actions">
+      <button id="dlgClose" class="btn">Cerrar</button>
+      <!-- Controles visibles en “asignados” -->
+      <select id="estadoSel" class="btn" style="min-width:170px; display:none">
+        <option value="EN_CURSO">EN_CURSO</option>
+        <option value="RESUELTO">RESUELTO</option>
+        <option value="CANCELADO">CANCELADO</option>
+      </select>
+      <button id="btnEstado" class="btn btn-primary" style="display:none">Guardar estado</button>
+      <!-- Oculto en “asignados”, pero lo dejamos por compatibilidad -->
+      <button id="btnTomar" class="btn btn-primary" style="display:none">Asignarme</button>
+    </div>
+  </dialog>
+
+  <!-- Diálogo: ¿Solo yo o en equipo? (requerido por el JS aunque aquí no se use) -->
+  <dialog id="assignDlg" class="tk-dialog" aria-labelledby="assignTitle">
+    <div class="tk-body">
+      <h3 class="tk-title" id="assignTitle">Asignar ticket</h3>
+
+      <div class="tk-kv" style="align-items:flex-start">
+        <span>Modo</span>
+        <div>
+          <label style="display:inline-flex;align-items:center;gap:8px;margin-right:12px">
+            <input type="radio" name="assignMode" id="optSolo" value="solo" checked />
+            <strong>Solo yo</strong>
+          </label>
+          <label style="display:inline-flex;align-items:center;gap:8px">
+            <input type="radio" name="assignMode" id="optEquipo" value="equipo" />
+            <strong>En equipo</strong>
+          </label>
+        </div>
+      </div>
+
+      <div id="assignEquipoWrap" style="display:none; margin-top:8px">
+        <div class="note">Selecciona técnicos adicionales:</div>
+        <div id="assignList"
+             style="margin-top:8px; display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:8px"></div>
+        <div id="assignNoOthers" class="note" style="display:none;margin-top:6px">
+          No hay otros técnicos activos disponibles.
+        </div>
+      </div>
+    </div>
+    <div class="tk-actions">
+      <button id="assignCancel" class="btn">Cancelar</button>
+      <button id="assignConfirm" class="btn btn-primary">Confirmar</button>
+    </div>
+  </dialog>
+
+  <div id="toastWrap" class="toast-wrap" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>

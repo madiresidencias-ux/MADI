@@ -1,0 +1,363 @@
+<!-- templates/solicitante/encuesta.html — COMPLETO (errores dinámicos y comentarios opcional) -->
+{% set page_title = "MADI — Encuesta de Satisfacción" %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page_title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/solicitante.css') }}">
+  <style>
+    .wrap{max-width:1100px;margin:18px auto;padding:0 12px}
+    .card{background:#fff;border:1px solid #e6e2e8;border-radius:10px;padding:16px}
+    .section-title{background:linear-gradient(90deg,#7b1026,#600d1e);color:#fff;padding:8px 12px;border-radius:6px;font-weight:800;text-transform:uppercase;text-align:center;margin:0 0 12px}
+    .subhead{font-weight:800;color:#5a0f1d;margin:12px 0 6px}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+    .col-3{grid-column:span 3}.col-4{grid-column:span 4}.col-5{grid-column:span 5}.col-12{grid-column:1/-1}
+    @media (max-width:640px){.grid{grid-template-columns:1fr}}
+    .field label{display:block;font-weight:600;margin-bottom:6px}
+    .readonly{background:#fafafa}
+    .btn{padding:10px 16px;border-radius:8px;border:1px solid #e6e2e8;cursor:pointer;font-weight:800}
+    .btn-primary{background:#7b1026;color:#fff;border-color:#600d1e}
+    .submit{display:flex;justify-content:center;margin-top:16px}
+    .gallery{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
+    .thumb{position:relative;width:180px;height:140px;border:1px solid #e6e2e8;border-radius:10px;overflow:hidden;background:#fff}
+    .thumb img{width:100%;height:100%;object-fit:cover}
+    .muted{color:#666}
+
+    /* ===== Escala tipo segmentos (1–5) y Sí/No ===== */
+    .rating-block{margin:10px 0 16px}
+    .rating-head{font-weight:600;margin-bottom:6px}
+    .seg-group{display:flex;border:1px solid #e6e2e8;border-radius:10px;overflow:hidden}
+    .seg{flex:1;position:relative}
+    .seg input{position:absolute;opacity:0;inset:0}
+    /* número y etiqueta con espacio visible */
+    .seg span{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 0;user-select:none}
+    .seg span small{font-size:12px;opacity:.85}
+    .seg input:checked + span{background:#7b1026;color:#fff;font-weight:800}
+
+    .seg + .seg{border-left:1px solid #e6e2e8}
+    .seg:hover span{background:#faf7f8}
+    .seg input:focus + span{outline:2px solid #600d1e;outline-offset:-2px}
+    .seg input:checked + span{background:#7b1026;color:#fff;font-weight:800}
+
+    /* ===== Errores dinámicos ===== */
+    .alert{display:flex;gap:8px;align-items:flex-start;background:#fff2f4;border:1px solid #ffd5db;color:#7b1026;padding:10px 12px;border-radius:10px;margin-bottom:12px}
+    .alert[hidden]{display:none}
+    .err{display:none;color:#a31224;font-size:12px;margin-top:6px}
+    .err.show{display:block;animation:pop .16s ease}
+    .has-error .seg-group,
+    .has-error textarea,
+    .has-error input.readonly{border-color:#a31224;box-shadow:0 0 0 3px rgba(163,18,36,.08)}
+    @keyframes pop{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+
+    .tray-actions{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:12px;color:#555}
+    .char-badge{font-weight:800}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <form id="encuestaForm" class="card" novalidate>
+      <h2 class="section-title">Encuesta de Satisfacción</h2>
+
+      <!-- Banner de errores -->
+      <div id="formAlert" class="alert" hidden>
+        <div>⚠️</div>
+        <div id="formAlertMsg">Por favor corrige los campos marcados.</div>
+      </div>
+
+      <input type="hidden" id="ticket_id" name="ticket_id" value="{{ ticket_id }}"/>
+
+      <!-- Autollenado -->
+      <div class="grid">
+        <div class="field col-3">
+          <label>Folio</label>
+          <input type="text" class="readonly" value="{{ folio }}" readonly>
+        </div>
+        <div class="field col-5">
+          <label>Nombre del solicitante</label>
+          <input type="text" class="readonly" value="{{ solicitante or '' }}" readonly>
+        </div>
+        <div class="field col-4">
+          <label>Área</label>
+          <input type="text" class="readonly" value="{{ area_nombre or '-' }}" readonly>
+        </div>
+        <div class="field col-4">
+          <label>Estado del ticket</label>
+          <input type="text" class="readonly" value="{{ estado }}" readonly>
+        </div>
+        <div class="field col-4">
+          <label>Tipo de servicio</label>
+          <input type="text" class="readonly" value="{{ tipo_servicio or '-' }}" readonly>
+        </div>
+        <div class="field col-12">
+          <label>Técnicos que atendieron</label>
+          <input type="text" class="readonly" value="{{ tecnicos_str or '-' }}" readonly>
+        </div>
+      </div>
+
+      <h3 class="section-title" style="margin-top:12px">Calificaciones</h3>
+
+      <!-- ===== Bloque A · Tiempo y efectividad ===== -->
+      <div class="subhead">A) Tiempo y efectividad</div>
+
+      <div class="rating-block" id="blk_q_rapidez">
+        <div class="rating-head">¿CÓMO CALIFICARÍA LA RAPIDEZ CON LA QUE EL DEPARTAMENTO DE SISTEMAS RESOLVIÓ SU SOLICITUD?</div>
+        <div class="seg-group" role="radiogroup" aria-label="Rapidez de resolución">
+          <label class="seg"><input type="radio" name="q_rapidez" value="1"><span>1<small>Muy lenta</small></span></label>
+          <label class="seg"><input type="radio" name="q_rapidez" value="2"><span>2<small>Lenta</small></span></label>
+          <label class="seg"><input type="radio" name="q_rapidez" value="3"><span>3<small>Adecuada</small></span></label>
+          <label class="seg"><input type="radio" name="q_rapidez" value="4"><span>4<small>Rápida</small></span></label>
+          <label class="seg"><input type="radio" name="q_rapidez" value="5"><span>5<small>Muy rápida</small></span></label>
+        </div>
+        <div class="err" data-err-for="q_rapidez"></div>
+      </div>
+
+      <div class="rating-block" id="blk_q_resolucion_efectiva">
+        <div class="rating-head">¿LOS PROBLEMAS EN LAS SOLICITUDES PRESENTADAS, SE HAN RESUELTO DE MANERA EFECTIVA?</div>
+        <div class="seg-group" role="radiogroup" aria-label="Efectividad de la solución">
+          <label class="seg"><input type="radio" name="q_resolucion_efectiva" value="1"><span>1<small>Muy inefectiva</small></span></label>
+          <label class="seg"><input type="radio" name="q_resolucion_efectiva" value="2"><span>2<small>Inefectiva</small></span></label>
+          <label class="seg"><input type="radio" name="q_resolucion_efectiva" value="3"><span>3<small>Parcial</small></span></label>
+          <label class="seg"><input type="radio" name="q_resolucion_efectiva" value="4"><span>4<small>Efectiva</small></span></label>
+          <label class="seg"><input type="radio" name="q_resolucion_efectiva" value="5"><span>5<small>Muy efectiva</small></span></label>
+        </div>
+        <div class="err" data-err-for="q_resolucion_efectiva"></div>
+      </div>
+
+      <div class="rating-block" id="blk_q_satis_solucion">
+        <div class="rating-head">¿QUÉ TAN SATISFECHO ESTÁ CON LA SOLUCIÓN PROPORCIONADA POR EL EQUIPO QUE ATENDIÓ SU SOLICITUD?</div>
+        <div class="seg-group" role="radiogroup" aria-label="Satisfacción con la solución">
+          <label class="seg"><input type="radio" name="q_satis_solucion" value="1"><span>1<small>Muy insatisfecho</small></span></label>
+          <label class="seg"><input type="radio" name="q_satis_solucion" value="2"><span>2<small>Insatisfecho</small></span></label>
+          <label class="seg"><input type="radio" name="q_satis_solucion" value="3"><span>3<small>Neutral</small></span></label>
+          <label class="seg"><input type="radio" name="q_satis_solucion" value="4"><span>4<small>Satisfecho</small></span></label>
+          <label class="seg"><input type="radio" name="q_satis_solucion" value="5"><span>5<small>Muy satisfecho</small></span></label>
+        </div>
+        <div class="err" data-err-for="q_satis_solucion"></div>
+      </div>
+
+      <div class="rating-block" id="blk_p4">
+        <div class="rating-head">4. Satisfacción general</div>
+        <div class="seg-group" role="radiogroup" aria-label="Satisfacción general">
+          <label class="seg"><input type="radio" name="p4" value="1"><span>1<small>Muy baja</small></span></label>
+          <label class="seg"><input type="radio" name="p4" value="2"><span>2<small>Baja</small></span></label>
+          <label class="seg"><input type="radio" name="p4" value="3"><span>3<small>Media</small></span></label>
+          <label class="seg"><input type="radio" name="p4" value="4"><span>4<small>Alta</small></span></label>
+          <label class="seg"><input type="radio" name="p4" value="5"><span>5<small>Muy alta</small></span></label>
+        </div>
+        <div class="err" data-err-for="p4"></div>
+      </div>
+
+      <!-- ===== Bloque B · Interacción con el personal ===== -->
+      <div class="subhead">B)  Interacción con el personal</div>
+
+      <div class="rating-block" id="blk_p3">
+        <div class="rating-head">3. Atención de Mesa de Ayuda</div>
+        <div class="seg-group" role="radiogroup" aria-label="Atención de Mesa de Ayuda">
+          <label class="seg"><input type="radio" name="p3" value="1"><span>1<small>Muy mala</small></span></label>
+          <label class="seg"><input type="radio" name="p3" value="2"><span>2<small>Mala</small></span></label>
+          <label class="seg"><input type="radio" name="p3" value="3"><span>3<small>Neutral</small></span></label>
+          <label class="seg"><input type="radio" name="p3" value="4"><span>4<small>Buena</small></span></label>
+          <label class="seg"><input type="radio" name="p3" value="5"><span>5<small>Excelente</small></span></label>
+        </div>
+        <div class="err" data-err-for="p3"></div>
+      </div>
+
+      <div class="rating-block" id="blk_p2">
+        <div class="rating-head">2. Actitud del técnico</div>
+        <div class="seg-group" role="radiogroup" aria-label="Actitud del técnico">
+          <label class="seg"><input type="radio" name="p2" value="1"><span>1<small>Muy mala</small></span></label>
+          <label class="seg"><input type="radio" name="p2" value="2"><span>2<small>Mala</small></span></label>
+          <label class="seg"><input type="radio" name="p2" value="3"><span>3<small>Neutral</small></span></label>
+          <label class="seg"><input type="radio" name="p2" value="4"><span>4<small>Buena</small></span></label>
+          <label class="seg"><input type="radio" name="p2" value="5"><span>5<small>Excelente</small></span></label>
+        </div>
+        <div class="err" data-err-for="p2"></div>
+      </div>
+
+      <div class="rating-block" id="blk_q_identificacion">
+        <div class="rating-head">¿LA PERSONA QUE ATENDIÓ SU SOLICITUD SE IDENTIFICÓ?</div>
+        <div class="seg-group" role="radiogroup" aria-label="Identificación del personal">
+          <label class="seg"><input type="radio" name="q_identificacion" value="si"><span>Sí</span></label>
+          <label class="seg"><input type="radio" name="q_identificacion" value="no"><span>No</span></label>
+        </div>
+        <div class="err" data-err-for="q_identificacion"></div>
+      </div>
+
+      <!-- ===== Bloque C · Servicio web ===== -->
+      <div class="subhead">C) Servicio web</div>
+
+      <div class="rating-block" id="blk_q_satis_web">
+        <div class="rating-head">EN UNA ESCALA DEL 1 AL 5, DONDE 5 ES LA MÁXIMA PUNTUACIÓN, ¿QUÉ TAN SATISFECHO ESTÁ CON LA ATENCIÓN BRINDADA EN EL SERVICIO WEB (PÁGINA)?</div>
+        <div class="seg-group" role="radiogroup" aria-label="Satisfacción con el servicio web">
+          <label class="seg"><input type="radio" name="q_satis_web" value="1"><span>1</span></label>
+          <label class="seg"><input type="radio" name="q_satis_web" value="2"><span>2</span></label>
+          <label class="seg"><input type="radio" name="q_satis_web" value="3"><span>3</span></label>
+          <label class="seg"><input type="radio" name="q_satis_web" value="4"><span>4</span></label>
+          <label class="seg"><input type="radio" name="q_satis_web" value="5"><span>5</span></label>
+        </div>
+        <div class="err" data-err-for="q_satis_web"></div>
+      </div>
+
+      <!-- Comentarios y Sugerencias -->
+      <div class="field col-12" id="blk_q_sugerencias">
+        <label for="q_sugerencias">¿QUÉ SUGERENCIAS TIENE PARA MEJORAR EL SERVICIO DE SOPORTE? <span class="muted">(obligatorio)</span></label>
+        <textarea id="q_sugerencias" name="q_sugerencias" rows="4" required maxlength="500" placeholder="Escribe tus sugerencias específicas…"></textarea>
+        <div class="tray-actions">
+          <span class="muted">Campo obligatorio · Máx. 500 caracteres</span>
+          <span class="char-badge" data-count-for="q_sugerencias">0/500</span>
+        </div>
+        <div class="err" data-err-for="q_sugerencias"></div>
+      </div>
+
+      <div class="field col-12" id="blk_comentarios">
+        <label for="comentarios">Bandeja de comentarios (general, opcional)</label>
+        <textarea id="comentarios" name="comentarios" rows="4" maxlength="1000" placeholder="Escribe tus comentarios generales aquí…"></textarea>
+        <div class="tray-actions">
+          <span class="muted">Opcional</span>
+          <span class="char-badge" data-count-for="comentarios">0/1000</span>
+        </div>
+        <div class="err" data-err-for="comentarios"></div>
+      </div>
+
+      <h3 class="section-title" style="margin-top:12px">Tiempos</h3>
+      <div class="grid">
+        <div class="field col-4">
+          <label>Hora de solicitud</label>
+          <input type="text" class="readonly" value="{{ hora_solicitud or '-' }}" readonly>
+        </div>
+        <div class="field col-4">
+          <label>Hora de cierre</label>
+          <input type="text" class="readonly" value="{{ hora_cierre or '-' }}" readonly>
+        </div>
+        <div class="field col-4">
+          <label>Tiempo de solución (técnico)</label>
+          <input type="text" class="readonly" value="{{ t_tecnico or '' }}" readonly>
+        </div>
+      </div>
+
+      <h3 class="section-title" style="margin-top:12px">Evidencias del ticket</h3>
+      <div id="gallery" class="gallery" aria-live="polite"><div class="muted">Cargando…</div></div>
+
+      <div class="submit"><button id="btnSubmit" class="btn btn-primary" type="submit">Enviar</button></div>
+    </form>
+  </main>
+
+  <script>
+  (function(){
+    // ===== Evidencias =====
+    const tid = {{ ticket_id }};
+    const g = document.getElementById('gallery');
+    fetch(`/api/solicitante/tickets/${tid}/evidencias`, { headers: { Accept:'application/json' } })
+      .then(r=>r.json())
+      .then(data=>{
+        g.innerHTML = '';
+        if(!data.ok || !data.evidencias || !data.evidencias.length){
+          g.innerHTML = '<div class="muted">Sin evidencias.</div>';
+          return;
+        }
+        data.evidencias.forEach(ev=>{
+          const box = document.createElement('div');
+          box.className = 'thumb';
+          const img = new Image();
+          img.src = ev.url; img.alt = ev.name || 'Evidencia';
+          box.appendChild(img); g.appendChild(box);
+        });
+      })
+      .catch(()=>{ g.innerHTML = '<div class="muted">No se pudieron cargar las evidencias.</div>'; });
+
+    // ===== Contadores de caracteres =====
+    function bindCharCounters(){
+      document.querySelectorAll('.char-badge[data-count-for]').forEach(b=>{
+        const name = b.getAttribute('data-count-for');
+        const el = document.querySelector('[name="'+name+'"]');
+        if(!el) return;
+        const max = el.getAttribute('maxlength') ? parseInt(el.getAttribute('maxlength'),10) : 0;
+        const update=()=>{ b.textContent = el.value.length + (max?('/'+max):''); };
+        el.addEventListener('input', update);
+        update();
+      });
+    }
+    bindCharCounters();
+
+    // ===== Errores dinámicos =====
+    const form = document.getElementById('encuestaForm');
+    const btnSubmit = document.getElementById('btnSubmit');
+    const alertBox = document.getElementById('formAlert');
+    const alertMsg = document.getElementById('formAlertMsg');
+
+    function clearErrors(){
+      alertBox.hidden = true;
+      document.querySelectorAll('.err').forEach(e=>{ e.classList.remove('show'); e.textContent=''; });
+      document.querySelectorAll('.has-error').forEach(b=>b.classList.remove('has-error'));
+    }
+    function showError(name, msg){
+      const err = document.querySelector(`.err[data-err-for="${name}"]`);
+      if(err){
+        const blk = err.closest('.rating-block, .field') || err.parentElement;
+        blk && blk.classList.add('has-error');
+        err.textContent = msg || 'Campo obligatorio';
+        err.classList.add('show');
+      }
+    }
+    function firstInvalidScroll(){
+      const firstErr = document.querySelector('.has-error');
+      if(firstErr) firstErr.scrollIntoView({behavior:'smooth', block:'center'});
+    }
+
+    form.addEventListener('submit', async (ev)=>{
+      ev.preventDefault();
+      clearErrors();
+
+      // Radios obligatorios
+      const groups = ['p2','p3','p4','q_rapidez','q_identificacion','q_resolucion_efectiva','q_satis_solucion','q_satis_web'];
+      let invalid = false;
+      for(const gName of groups){
+        if(!document.querySelector(`input[name="${gName}"]:checked`)){
+          showError(gName, 'Selecciona una opción.');
+          invalid = true;
+        }
+      }
+
+      // Sugerencias obligatoria
+      const sug = document.getElementById('q_sugerencias');
+      if(!sug.value.trim()){
+        showError('q_sugerencias','Este campo es obligatorio.');
+        invalid = true;
+      }
+
+      // Comentarios son opcionales: no validar
+      if(invalid){
+        alertMsg.textContent = 'Por favor corrige los campos marcados.';
+        alertBox.hidden = false;
+        firstInvalidScroll();
+        return;
+      }
+
+      btnSubmit.disabled = true;
+      try{
+        const fd = new FormData(form);
+        const res = await fetch('/api/encuestas', { method:'POST', body: fd });
+        const data = await res.json();
+        if(!res.ok || !data.ok){
+          alertMsg.textContent = (data && data.error) ? data.error : 'No se pudo registrar la encuesta.';
+          alertBox.hidden = false;
+          btnSubmit.disabled = false;
+          firstInvalidScroll();
+          return;
+        }
+        // Éxito
+        alertMsg.textContent = '¡Gracias! Tu encuesta se registró correctamente.';
+        alertBox.hidden = false;
+        setTimeout(()=>{ window.location.href = "{{ url_for('solicitante_tickets') }}"; }, 800);
+      }catch(e){
+        alertMsg.textContent = 'Ocurrió un error al enviar la encuesta.';
+        alertBox.hidden = false;
+        btnSubmit.disabled = false;
+      }
+    });
+    })();
+  </script>
+</body>
+</html>

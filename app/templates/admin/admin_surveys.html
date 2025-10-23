@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>MADI — Admin | Encuestas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>:root{ --vino:#8b1e3f }</style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <header class="bg-white shadow">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <h1 class="text-xl font-semibold"><span style="color:var(--vino);font-weight:700">MADI</span> — Encuestas</h1>
+      <nav class="text-sm">
+        <a href="/admin/dashboard" class="mr-4 text-gray-600 hover:text-gray-900">Dashboard</a>
+        <a href="/admin/tickets" class="mr-4 text-gray-600 hover:text-gray-900">Tickets</a>
+        <a href="/admin/users" class="mr-4 text-gray-600 hover:text-gray-900">Usuarios</a>
+        <a href="/admin/surveys" class="mr-4 font-medium text-gray-900">Encuestas</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-4 space-y-4">
+    <section class="bg-white rounded-2xl p-4 shadow flex flex-wrap items-end gap-4">
+      <div>
+        <label class="block text-sm text-gray-600">Mes</label>
+        <input id="month" type="month" class="border rounded-lg px-3 py-2">
+      </div>
+      <div>
+        <label class="block text-sm text-gray-600">Área (ID)</label>
+        <input id="area" class="border rounded-lg px-3 py-2 min-w-40" placeholder="Deja vacío para todas">
+      </div>
+      <button id="btnGo" class="bg-[var(--vino)] text-white px-4 py-2 rounded-xl">Consultar</button>
+      <span id="meta" class="text-sm text-gray-500 ml-auto"></span>
+    </section>
+
+    <section class="bg-white rounded-2xl p-4 shadow">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold">Registros de encuestas</h2>
+        <div class="text-sm text-gray-500" id="count"></div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left bg-gray-100">
+              <th class="p-2">Fecha</th>
+              <th class="p-2">Área</th>
+              <th class="p-2">Ticket</th>
+              <th class="p-2">Calificación</th>
+              <th class="p-2">Comentario</th>
+              <th class="p-2">PDF</th>
+            </tr>
+          </thead>
+          <tbody id="srows"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const srows = document.getElementById('srows');
+    const count = document.getElementById('count');
+    const meta  = document.getElementById('meta');
+    const month = document.getElementById('month');
+    const area  = document.getElementById('area');
+    const btnGo = document.getElementById('btnGo');
+
+    function monthISO(d=new Date()){
+      const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0');
+      return `${y}-${m}`;
+    }
+
+    async function loadSurveys(){
+      const params = new URLSearchParams();
+      if(month.value) params.set('month', month.value);
+      if(area.value.trim()) params.set('area_id', area.value.trim());
+      const r = await fetch(`/api/admin/surveys?${params.toString()}`);
+      const data = await r.json();
+      paint(data);
+      meta.textContent = `Mes: ${month.value || monthISO()} · Área: ${area.value || 'Todas'}`;
+    }
+
+    function paint(list){
+      srows.innerHTML=''; count.textContent = `${list.length||0} resultados`;
+      (list||[]).forEach(s=>{
+        const tr=document.createElement('tr'); tr.className='border-b align-top';
+        const stars = s.rating ? '★★★★★'.slice(0, Math.round(s.rating)) : '';
+        tr.innerHTML = `
+          <td class="p-2">${new Date(s.created_at).toLocaleString()}</td>
+          <td class="p-2">${s.area||'—'}</td>
+          <td class="p-2">#${s.ticket_id}</td>
+          <td class="p-2"><span class="text-amber-500">${stars}</span> <span class="text-xs text-gray-500">${s.rating||''}</span></td>
+          <td class="p-2 max-w-[360px]">${(s.comments||'').replaceAll('\\n','<br>')}</td>
+          <td class="p-2">${s.pdf_url ? `<a href="${s.pdf_url}" target="_blank" class="px-3 py-1 rounded-lg border">Descargar PDF</a>` : '—'}</td>
+        `;
+        srows.appendChild(tr);
+      });
+    }
+
+    month.value = monthISO();
+    btnGo.addEventListener('click', loadSurveys);
+    loadSurveys();
+  </script>
+</body>
+</html>

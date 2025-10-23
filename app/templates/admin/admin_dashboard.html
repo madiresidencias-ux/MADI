@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>MADI — Admin | Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root{ --vino:#8b1e3f; --vino2:#b53a5f }
+    .vino { color: var(--vino) } .bg-vino{ background:var(--vino) }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <header class="bg-white shadow">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <h1 class="text-xl font-semibold"><span class="vino font-bold">MADI</span> — Panel de Administración</h1>
+      <nav class="text-sm">
+        <a href="/admin/dashboard" class="mr-4 font-medium text-gray-900">Dashboard</a>
+        <a href="/admin/tickets" class="mr-4 text-gray-600 hover:text-gray-900">Tickets</a>
+        <a href="/admin/users" class="mr-4 text-gray-600 hover:text-gray-900">Usuarios</a>
+        <a href="/admin/surveys" class="text-gray-600 hover:text-gray-900">Encuestas</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-4 space-y-6">
+    <section class="bg-white rounded-2xl p-4 shadow flex flex-wrap items-center gap-4">
+      <div>
+        <label class="block text-sm text-gray-600">Mes</label>
+        <input id="monthPicker" type="month" class="border rounded-lg px-3 py-2" />
+      </div>
+      <button id="refreshBtn" class="bg-vino text-white px-4 py-2 rounded-xl hover:opacity-90">Actualizar</button>
+      <span id="lastUpdate" class="text-sm text-gray-500 ml-auto"></span>
+    </section>
+
+    <section class="grid md:grid-cols-4 gap-4">
+      <div class="bg-white rounded-2xl p-5 shadow">
+        <div class="text-sm text-gray-500">Tickets del mes</div>
+        <div id="kpiTotal" class="text-3xl font-bold mt-1">—</div>
+      </div>
+      <div class="bg-white rounded-2xl p-5 shadow">
+        <div class="text-sm text-gray-500">Abiertos</div>
+        <div id="kpiOpen" class="text-3xl font-bold mt-1 text-amber-600">—</div>
+      </div>
+      <div class="bg-white rounded-2xl p-5 shadow">
+        <div class="text-sm text-gray-500">Sin asignar</div>
+        <div id="kpiUnassigned" class="text-3xl font-bold mt-1 text-red-600">—</div>
+      </div>
+      <div class="bg-white rounded-2xl p-5 shadow">
+        <div class="text-sm text-gray-500">Cerrados</div>
+        <div id="kpiClosed" class="text-3xl font-bold mt-1 text-emerald-600">—</div>
+      </div>
+    </section>
+
+    <section class="grid lg:grid-cols-3 gap-6">
+      <div class="bg-white rounded-2xl p-5 shadow">
+        <h2 class="font-semibold mb-3">Servicios por Técnico (mes)</h2>
+        <div style="height:280px"><canvas id="chartTech"></canvas></div>
+      </div>
+      <div class="bg-white rounded-2xl p-5 shadow">
+        <h2 class="font-semibold mb-3">Peticiones por Área (mes)</h2>
+        <div style="height:280px"><canvas id="chartArea"></canvas></div>
+      </div>
+      <div class="bg-white rounded-2xl p-5 shadow">
+        <h2 class="font-semibold mb-3">Tickets por Mes (últimos 6)</h2>
+        <div style="height:280px"><canvas id="chartMonthly"></canvas></div>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-2xl p-5 shadow">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold">Bitácoras recientes</h2>
+        <a href="/admin/tickets" class="text-sm text-gray-600 hover:text-gray-900">Ver tickets</a>
+      </div>
+      <div id="logs" class="space-y-2 text-sm"></div>
+    </section>
+  </main>
+
+  <script>
+    const monthPicker = document.getElementById('monthPicker');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const lastUpdate = document.getElementById('lastUpdate');
+    const el = id => document.getElementById(id);
+    let chartTech, chartArea, chartMonthly;
+
+    function monthISO(d=new Date()){
+      const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0');
+      return `${y}-${m}`;
+    }
+
+    function renderCharts(data){
+      const techLabels = (data.by_technician||[]).map(t=>t.technician);
+      const techData   = (data.by_technician||[]).map(t=>t.count);
+      chartTech?.destroy();
+      chartTech = new Chart(document.getElementById('chartTech'),{
+        type:'bar', data:{labels:techLabels,datasets:[{label:'Servicios',data:techData}]},
+        options:{responsive:true,maintainAspectRatio:false}
+      });
+
+      const areaLabels = (data.by_area||[]).map(a=>a.area);
+      const areaData   = (data.by_area||[]).map(a=>a.count);
+      chartArea?.destroy();
+      chartArea = new Chart(document.getElementById('chartArea'),{
+        type:'doughnut', data:{labels:areaLabels,datasets:[{label:'Peticiones',data:areaData}]},
+        options:{responsive:true,maintainAspectRatio:false}
+      });
+
+      const mLabels = (data.last6_months||[]).map(i=>i.month);
+      const mData   = (data.last6_months||[]).map(i=>i.count);
+      chartMonthly?.destroy();
+      chartMonthly = new Chart(document.getElementById('chartMonthly'),{
+        type:'line', data:{labels:mLabels,datasets:[{label:'Tickets',data:mData,tension:0.3}]},
+        options:{responsive:true,maintainAspectRatio:false}
+      });
+    }
+
+    async function refresh(){
+      const m = monthPicker.value || monthISO();
+      const r = await fetch(`/api/admin/metrics?month=${m}`); const data = await r.json();
+      el('kpiTotal').textContent = data.total ?? 0;
+      el('kpiOpen').textContent = data.open ?? 0;
+      el('kpiUnassigned').textContent = data.unassigned ?? 0;
+      el('kpiClosed').textContent = data.closed ?? 0;
+      renderCharts(data);
+
+      const logs = await (await fetch('/api/admin/logs?limit=50')).json();
+      const wrap = el('logs'); wrap.innerHTML='';
+      (logs||[]).forEach(i=>{
+        const row=document.createElement('div');
+        row.className='px-3 py-2 rounded-lg bg-gray-50 border';
+        row.textContent = `[${i.created_at}] ${i.message}`;
+        wrap.appendChild(row);
+      });
+      lastUpdate.textContent = `Actualizado: ${new Date().toLocaleString()}`;
+    }
+
+    monthPicker.value = monthISO();
+    refreshBtn.addEventListener('click', refresh);
+    refresh();
+  </script>
+</body>
+</html>

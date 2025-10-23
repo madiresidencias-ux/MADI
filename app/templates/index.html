@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MADI — Mesa de Ayuda Digital Institucional</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v=1) }}">
+</head>
+
+<body>
+    <main class="hero">
+        <div class="site-logo" aria-label="Ayuntamiento de San Juan Bautista Tuxtepec">
+            <img src="{{ url_for('static', filename='img/logoblanco.png') }}" alt="Logotipo Tuxtepec" />
+        </div>
+
+        <div class="container">
+            <h1 class="title madi-logo">MADI</h1>
+            <p class="subtitle">MESA DE AYUDA DIGITAL INSTITUCIONAL</p>
+
+            <div class="roles" role="list">
+                <!-- Botón INICIAR SESIÓN -->
+                <a class="role" role="listitem" href="{{ url_for('login') }}" title="Ingresar como Solicitante">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                        aria-hidden="true">
+                        <circle cx="12" cy="7" r="4"></circle>
+                        <path d="M4 20c0-4 4-6 8-6s8 2 8 6"></path>
+                    </svg>
+                    <div class="label">INICIAR SESIÓN</div>
+                </a>
+            </div>
+
+            <div class="glow" aria-hidden="true"></div>
+            <footer>
+                <small>© <span id="y"></span> Ayuntamiento de San Juan Bautista Tuxtepec · MADI</small>
+            </footer>
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+
+</html>

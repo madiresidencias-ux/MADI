@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Inicio de sesión</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css', v=1) }}">
+</head>
+<body class="login-page">
+  <main class="card" role="main">
+    <div class="avatar" aria-hidden="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="7" r="4"></circle>
+        <path d="M4 20c0-4 4-6 8-6s8 2 8 6"></path>
+      </svg>
+    </div>
+
+    <h1 class="login-title">
+      {% if role_hint == 'admin' %}CUENTA · ADMINISTRADOR
+      {% elif role_hint == 'tecnico' %}CUENTA · TÉCNICO
+      {% else %}CUENTA{% endif %}
+    </h1>
+
+    <section aria-label="Formulario de inicio de sesión">
+      <div class="field">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-5.33 0-8 2.67-8 6v2h16v-2c0-3.33-2.67-6-8-6Z"/>
+        </svg>
+        <input id="login-user" type="text"
+               placeholder="{% if role_hint == 'admin' %}USUARIO ADMIN{% elif role_hint == 'tecnico' %}USUARIO TÉCNICO{% else %}USUARIO{% endif %}"
+               autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus />
+      </div>
+
+      <div class="field">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M17 8V7a5 5 0 0 0-10 0v1H5v14h14V8Zm-8 0V7a3 3 0 0 1 6 0v1Z"/>
+        </svg>
+        <input id="login-pass" type="password" placeholder="CONTRASEÑA" autocomplete="current-password" required />
+        <button class="toggle-pass" type="button" id="toggle-pass" aria-label="Mostrar u ocultar contraseña" title="Mostrar/Ocultar">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 5C7 5 2.73 8.11 1 12c1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7Zm0 12a5 5 0 1 1 5-5 5.006 5.006 0 0 1-5 5Z"/>
+          </svg>
+        </button>
+      </div>
+
+      <button class="btn" id="btn-login" type="button">INICIAR SESIÓN</button>
+      <div class="msg" id="login-msg" aria-live="polite"></div>
+      <div class="hint" id="caps-hint" style="display:none;">Bloq Mayús activado</div>
+    </section>
+  </main>
+
+  <script>
+    const $ = (s, c = document) => c.querySelector(s);
+    const btn = $("#btn-login");
+    const user = $("#login-user");
+    const pass = $("#login-pass");
+    const msg  = $("#login-msg");
+    const caps = $("#caps-hint");
+    const toggle = $("#toggle-pass");
+
+    function showMsg(t, ok = false) {
+      msg.textContent = t || "";
+      msg.className = "msg" + (ok ? " ok" : "");
+    }
+    function setLoading(v){
+      btn.disabled = v;
+      btn.textContent = v ? "Validando..." : "INICIAR SESIÓN";
+    }
+
+    toggle?.addEventListener("click", () => {
+      const isPwd = pass.type === "password";
+      pass.type = isPwd ? "text" : "password";
+      toggle.setAttribute("aria-pressed", isPwd ? "true" : "false");
+    });
+
+    ["keydown","keyup"].forEach(evt => {
+      pass.addEventListener(evt, (e) => {
+        try {
+          const on = e.getModifierState && e.getModifierState("CapsLock");
+          caps.style.display = on ? "block" : "none";
+        } catch {}
+      });
+    });
+
+    async function handleLogin() {
+      const u = (user.value || "").trim(), p = (pass.value || "").trim();
+      if (!u || !p) { showMsg("Ingresa usuario y contraseña."); return; }
+      showMsg(""); setLoading(true);
+      try {
+        const r = await fetch("{{ url_for('login') }}", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept":"application/json" },
+          body: JSON.stringify({ user: u, pass: p })
+        });
+        let data = null;
+        try { data = await r.json(); } catch {}
+        if (!r.ok || !data || !data.ok) {
+          const txt = (data && data.msg) ? data.msg : (r.status === 401 ? "Credenciales incorrectas." : "Error al iniciar sesión.");
+          showMsg(txt);
+          return;
+        }
+        showMsg("✔ Acceso concedido", true);
+        window.location.href = data.redirect || "/";
+      } catch {
+        showMsg("No se pudo conectar con el servidor.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    btn?.addEventListener("click", handleLogin);
+    [user, pass].forEach(el => el?.addEventListener("keydown", e => { if (e.key === "Enter") handleLogin(); }));
+  </script>
+
+  <noscript>Activa JavaScript para utilizar el formulario.</noscript>
+</body>
+</html>
